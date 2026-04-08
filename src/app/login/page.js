@@ -1,9 +1,12 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { supabase } from '../../lib/supabase';
 
 export default function LoginPage() {
+  const router = useRouter();
+
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [message, setMessage] = useState('');
@@ -82,6 +85,8 @@ export default function LoginPage() {
     }
 
     setMessage('Logged in successfully.');
+    router.push('/');
+    router.refresh();
   }
 
   return (
