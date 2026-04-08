@@ -20,8 +20,8 @@ export async function POST(request) {
       metadata: {
         userId,
       },
-      success_url: "http://localhost:3000?checkout=success",
-      cancel_url: "http://localhost:3000?checkout=cancel",
+       success_url: "https://measure1-app.vercel.app?checkout=success",
+      cancel_url: "https://measure1-app.vercel.app?checkout=cancel",
     });
 
     return Response.json({ url: session.url });
