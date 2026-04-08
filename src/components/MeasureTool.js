@@ -871,7 +871,7 @@ const showPrepBrushPreview = (event) => {
               )}
 
               <button onClick={() => { setPrepEraseMode(!prepEraseMode); setCropMode(false); setCropRect(null); }} style={{...S.ghost,color:prepEraseMode ? '#ff8a8a' : '#e8b84b',borderColor:prepEraseMode ? '#ff8a8a44' : '#e8b84b44'}}>
-                {prepEraseMode ? 'Stop Erasing' : 'Erase Hanger'}
+                {prepEraseMode ? 'Stop Erasing' : 'Manual Erase'}
               </button>
 
               <button onClick={undoPrepErase} disabled={!prepUndoImage} style={{...S.ghost,opacity:prepUndoImage ? 1 : 0.4,cursor:prepUndoImage ? 'pointer' : 'default'}}>
