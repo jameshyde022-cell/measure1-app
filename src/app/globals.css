@@ -1,0 +1,25 @@
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html, body {
+  height: 100%;
+  background: #0d0d0d;
+  color: #f0ebe0;
+  font-family: monospace;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+input:focus,
+select:focus {
+  outline: 1px solid #e8b84b;
+}
+
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: #0d0d0d; }
+::-webkit-scrollbar-thumb { background: #222; }
