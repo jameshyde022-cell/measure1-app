@@ -15,7 +15,7 @@ const LINE_COLORS = [
   '#FFCC02','#EF9A9A','#80DEEA','#BCAAA4','#80CBC4','#FFAB91',
 ];
 
-const DRAFT_KEY = 'measure-tool-draft-v2';
+const DRAFT_KEY_BASE = 'measure-tool-draft-v2';
 const PREP_MAX_W = 980;
 const PREP_MAX_H = 720;
 
@@ -153,7 +153,7 @@ function getFittedSize(w, h, maxW = PREP_MAX_W, maxH = PREP_MAX_H) {
   return { w: Math.max(1, Math.floor(w * scale)), h: Math.max(1, Math.floor(h * scale)) };
 }
 
-export default function MeasureTool() {
+export default function MeasureTool({ user }) {
   const [phase,setPhase]           = useState('upload');
   const [naturalSize,setNatural]   = useState({w:1,h:1});
   const [lines,setLines]           = useState([]);
@@ -189,7 +189,7 @@ export default function MeasureTool() {
   const [prepBrushSize, setPrepBrushSize] = useState(20);
   const [prepUndoImage, setPrepUndoImage] = useState(null);
   const [prepBrushPreview, setPrepBrushPreview] = useState({ x: 0, y: 0, visible: false });
-
+const draftKey = user?.id ? `${DRAFT_KEY_BASE}-${user.id}` : `${DRAFT_KEY_BASE}-guest`;
   const canvasRef        = useRef(null);
   const prepCanvasRef    = useRef(null);
   const prepCanvasWrapRef = useRef(null);
@@ -238,10 +238,11 @@ export default function MeasureTool() {
     redrawPrep();
   },[phase,imageDataUrl,redrawPrep]);
 
-  useEffect(()=>{
+   useEffect(()=>{
     if (typeof window === 'undefined') return;
     try {
-      const raw = window.localStorage.getItem(DRAFT_KEY);
+      window.localStorage.removeItem('measure-tool-draft-v2');
+      const raw = window.localStorage.getItem(draftKey);
       if (!raw) return;
       const draft = JSON.parse(raw);
       if (!draft?.imageDataUrl || !draft?.naturalSize) return;
@@ -270,12 +271,12 @@ export default function MeasureTool() {
       };
       img.src = draft.imageDataUrl;
     } catch {}
-  },[]);
+  },[draftKey]);
 
   useEffect(()=>{
     if (typeof window === 'undefined' || phase !== 'annotate' || !imageDataUrl) return;
     try {
-      window.localStorage.setItem(DRAFT_KEY, JSON.stringify({
+      window.localStorage.setItem(draftKey, JSON.stringify({
         imageDataUrl,originalDataUrl,naturalSize,lines,pending,colorIdx,curName,useCustom,customName,curValue,curUnit,brand,itemName,notes,exportBg,footerMode,customFooter,
       }));
       setDraftStatus('ready');
@@ -283,12 +284,11 @@ export default function MeasureTool() {
       console.warn('Draft autosave unavailable:', error);
       setDraftStatus('unavailable');
     }
-  },[phase,imageDataUrl,originalDataUrl,naturalSize,lines,pending,colorIdx,curName,useCustom,customName,curValue,curUnit,brand,itemName,notes,exportBg,footerMode,customFooter]);
+   },[draftKey,phase,imageDataUrl,originalDataUrl,naturalSize,lines,pending,colorIdx,curName,useCustom,customName,curValue,curUnit,brand,itemName,notes,exportBg,footerMode,customFooter]);
 
   const clearDraft = useCallback(()=>{
-    if (typeof window !== 'undefined') window.localStorage.removeItem(DRAFT_KEY);
-  },[]);
-
+    if (typeof window !== 'undefined') window.localStorage.removeItem(draftKey);
+  },[draftKey]);
   const loadWorkingImage = useCallback(async (dataUrl, nextPhase = 'prepare') => {
     const img = await loadImage(dataUrl);
     imgRef.current = img;
