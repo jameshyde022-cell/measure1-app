@@ -50,15 +50,7 @@ export default function LoginPage() {
       return;
     }
 
-    if (data.user) {
-      try {
-        await ensureProfile(data.user);
-      } catch (profileError) {
-        setMessage(profileError.message);
-        return;
-      }
-    }
-
+  
     setMessage('Account created. Check your email if Supabase asks you to confirm.');
   }
 
