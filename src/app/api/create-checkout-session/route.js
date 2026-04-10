@@ -9,6 +9,15 @@ export async function POST(request) {
       return Response.json({ error: "Missing userId" }, { status: 400 });
     }
 
+    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL;
+
+    if (!siteUrl) {
+      return Response.json(
+        { error: "Missing NEXT_PUBLIC_SITE_URL" },
+        { status: 500 }
+      );
+    }
+
     const session = await stripe.checkout.sessions.create({
       mode: "subscription",
       line_items: [
@@ -20,8 +29,8 @@ export async function POST(request) {
       metadata: {
         userId,
       },
-       success_url: "https://measure1-app.vercel.app?checkout=success",
-      cancel_url: "https://measure1-app.vercel.app?checkout=cancel",
+      success_url: `${siteUrl}?checkout=success`,
+      cancel_url: `${siteUrl}?checkout=cancel`,
     });
 
     return Response.json({ url: session.url });
