@@ -7,6 +7,18 @@ import MeasureTool from '../components/MeasureTool';
 export default function Home() {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [checkoutMessage, setCheckoutMessage] = useState(null);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('checkout') === 'success') {
+      setCheckoutMessage('Payment received — your Pro plan is now active. If it still shows Free, refresh in a few seconds.');
+      window.history.replaceState({}, '', window.location.pathname);
+    } else if (params.get('checkout') === 'cancel') {
+      setCheckoutMessage('Checkout canceled — you are still on the Free plan.');
+      window.history.replaceState({}, '', window.location.pathname);
+    }
+  }, []);
 
   useEffect(() => {
     async function getUser() {
@@ -52,6 +64,12 @@ export default function Home() {
 
   return (
     <main>
+      {checkoutMessage && (
+        <div style={{ padding: '10px 20px', background: '#123018', color: '#a5d6a7', fontFamily: 'monospace', fontSize: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <span>{checkoutMessage}</span>
+          <button onClick={() => setCheckoutMessage(null)} style={{ background: 'transparent', border: 'none', color: '#a5d6a7', cursor: 'pointer' }}>×</button>
+        </div>
+      )}
       <div style={{ padding: '12px 20px', display: 'flex', justifyContent: 'space-between' }}>
         <div>Logged in as: {user.email}</div>
         <button onClick={handleLogOut}>Log Out</button>

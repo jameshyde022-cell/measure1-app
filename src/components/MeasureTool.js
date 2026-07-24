@@ -215,8 +215,8 @@ const draftKey = user?.id ? `${DRAFT_KEY_BASE}-${user.id}` : `${DRAFT_KEY_BASE}-
   useEffect(()=>{ redraw(); },[redraw]);
   useEffect(()=>{ redrawPrep(); },[redrawPrep]);
   useEffect(() => {
-    loadExportStatus();
-  }, []);
+    if (user) loadExportStatus();
+  }, [user]);
 
   useEffect(()=>{
     if (phase!=='annotate'||!canvasRef.current||!imgRef.current) return;
@@ -363,10 +363,20 @@ const draftKey = user?.id ? `${DRAFT_KEY_BASE}-${user.id}` : `${DRAFT_KEY_BASE}-
     setBgRemoving(true);
     setBgError(null);
     try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        setBgRemoving(false);
+        setBgError('Log in to use background removal.');
+        return;
+      }
       const originalBlob = await fetch(originalDataUrl).then(r=>r.blob());
       const formData = new FormData();
       formData.append('image_file', originalBlob, 'upload.png');
-      const res = await fetch('/api/remove-bg', { method: 'POST', body: formData });
+      const res = await fetch('/api/remove-bg', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${session.access_token}` },
+        body: formData,
+      });
       if (!res.ok) {
         const err = await res.json().catch(()=>({}));
         throw new Error(err.error || 'Background removal failed.');
@@ -733,21 +743,17 @@ const showPrepBrushPreview = (event) => {
 
   const goToCheckout = async () => {
     try {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
+      const { data: { session } } = await supabase.auth.getSession();
 
-      if (!user) {
-        alert('You must be logged in');
+      if (!session) {
+        alert('Log in first to upgrade to Pro.');
+        window.location.href = '/login';
         return;
       }
 
       const response = await fetch('/api/create-checkout-session', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ userId: user.id }),
+        headers: { Authorization: `Bearer ${session.access_token}` },
       });
 
       const data = await response.json();
@@ -763,12 +769,45 @@ const showPrepBrushPreview = (event) => {
     }
   };
 
+  const goToBillingPortal = async () => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+
+      if (!session) {
+        alert('You must be logged in');
+        return;
+      }
+
+      const response = await fetch('/api/create-portal-session', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${session.access_token}` },
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        alert(data.error || 'Could not open billing portal');
+        return;
+      }
+
+      window.location.href = data.url;
+    } catch (error) {
+      alert('Something went wrong opening the billing portal');
+    }
+  };
+
   const downloadExport = async () => {
+    if (!user) {
+      alert('Log in to download exports. Free accounts get 1 export per day.');
+      window.location.href = '/login';
+      return;
+    }
+
     try {
       const result = await consumeExport();
 
       if (!result.allowed) {
-        alert('Free plan limit reached. You get 3 exports per day.');
+        alert('Free plan limit reached. You get 1 export per day. Upgrade to Pro for unlimited exports.');
         return;
       }
 
@@ -1091,7 +1130,11 @@ const showPrepBrushPreview = (event) => {
               <button onClick={downloadExport} style={{padding:'8px 14px',background:'#e8b84b',border:'none',fontFamily:'monospace',fontSize:9,letterSpacing:'0.15em',textTransform:'uppercase',cursor:'pointer',borderRadius:2,color:'#0d0d0d'}}>Download PNG</button>
               <button onClick={handleExport} style={{...S.ghost,color:'#e8b84b',borderColor:'#e8b84b44'}}>Regenerate</button>
               <button onClick={()=>setShowExport(false)} style={S.ghost}>Close</button>
-              {exportStatus?.plan !== 'pro' && (
+              {exportStatus?.plan === 'pro' ? (
+                <button onClick={goToBillingPortal} style={{...S.ghost,color:'#7dd3fc',borderColor:'#7dd3fc44'}}>
+                  Manage Billing
+                </button>
+              ) : (
                 <button onClick={goToCheckout} style={{...S.ghost,color:'#7dd3fc',borderColor:'#7dd3fc44'}}>
                   Upgrade to Pro
                 </button>
@@ -1102,7 +1145,7 @@ const showPrepBrushPreview = (event) => {
               <div style={{ marginTop: 8, fontFamily: 'monospace', fontSize: 10, color: '#999', letterSpacing: '0.08em', textAlign: 'center' }}>
                 {exportStatus.plan === 'pro'
                   ? 'PRO PLAN: UNLIMITED EXPORTS'
-                  : `FREE PLAN: ${exportStatus.remaining} EXPORTS LEFT TODAY`}
+                  : `FREE PLAN: ${exportStatus.remaining} OF ${exportStatus.limit ?? 1} EXPORT${(exportStatus.limit ?? 1) === 1 ? '' : 'S'} LEFT TODAY`}
               </div>
             )}
           </div>

@@ -30,8 +30,38 @@ export async function POST(request) {
       if (userId) {
         const { error } = await supabaseAdmin
           .from("profiles")
-          .update({ plan: "pro" })
+          .update({
+            plan: "pro",
+            stripe_customer_id: session.customer || null,
+            stripe_subscription_id: session.subscription || null,
+          })
           .eq("id", userId);
+
+        if (error) {
+          return Response.json(
+            { error: error.message || "Failed to update plan" },
+            { status: 500 }
+          );
+        }
+      }
+    }
+
+    if (
+      event.type === "customer.subscription.deleted" ||
+      event.type === "customer.subscription.updated"
+    ) {
+      const subscription = event.data.object;
+      const customerId = subscription.customer;
+
+      if (customerId) {
+        const isActive =
+          event.type === "customer.subscription.updated" &&
+          ["active", "trialing"].includes(subscription.status);
+
+        const { error } = await supabaseAdmin
+          .from("profiles")
+          .update({ plan: isActive ? "pro" : "free" })
+          .eq("stripe_customer_id", customerId);
 
         if (error) {
           return Response.json(
