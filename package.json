@@ -1,27 +1,30 @@
 {
-  "name": "measure-app",
-  "version": "0.1.0",
-  "private": true,
-  "scripts": {
-    "dev": "next dev",
-    "build": "next build",
-    "start": "next start",
-    "lint": "next lint"
-  },
-  "dependencies": {
-    "@stripe/stripe-js": "^9.1.0",
-    "@supabase/supabase-js": "^2.101.1",
-    "@vercel/analytics": "^2.0.1",
-    "next": "14.2.3",
-    "react": "^18",
-    "react-dom": "^18",
-    "stripe": "^22.0.0"
-  },
-  "devDependencies": {
-    "@types/node": "^20",
-    "@types/react": "^18",
-    "@types/react-dom": "^18",
-    "eslint": "^8",
-    "eslint-config-next": "14.2.3"
-  }
+    "name":  "measure-app",
+    "version":  "0.1.0",
+    "private":  true,
+    "scripts":  {
+                    "dev":  "next dev",
+                    "build":  "next build",
+                    "start":  "next start",
+                    "lint":  "next lint",
+                    "shopify:dev":  "shopify app dev",
+                    "shopify:config:link":  "shopify app config link",
+                    "shopify:deploy":  "shopify app deploy"
+                },
+    "dependencies":  {
+                         "@stripe/stripe-js":  "^9.1.0",
+                         "@supabase/supabase-js":  "^2.101.1",
+                         "@vercel/analytics":  "^2.0.1",
+                         "next":  "14.2.3",
+                         "react":  "^18",
+                         "react-dom":  "^18",
+                         "stripe":  "^22.0.0"
+                     },
+    "devDependencies":  {
+                            "@types/node":  "^20",
+                            "@types/react":  "^18",
+                            "@types/react-dom":  "^18",
+                            "eslint":  "^8",
+                            "eslint-config-next":  "14.2.3"
+                        }
 }

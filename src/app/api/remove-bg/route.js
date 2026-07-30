@@ -69,6 +69,8 @@ export async function POST(request) {
 
     const photoRoomForm = new FormData();
     photoRoomForm.append("image_file", imageFile);
+    photoRoomForm.append("bg_color", "ffffff");
+    photoRoomForm.append("format", "png");
 
     const response = await fetch("https://sdk.photoroom.com/v1/segment", {
       method: "POST",

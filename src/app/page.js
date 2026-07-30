@@ -6,25 +6,46 @@ import MeasureTool from '../components/MeasureTool';
 
 export default function Home() {
   const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [checkoutMessage, setCheckoutMessage] = useState(null);
+  const [shopifyContext, setShopifyContext] = useState(null);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
+    const shop = params.get('shop');
+    const host = params.get('host');
+    const embedded = params.get('embedded') === '1' || params.get('embedded') === 'true';
+    const framed = window.self !== window.top;
+
+    if (shop || host || embedded || framed) {
+      setShopifyContext({ shop: shop || 'shopify-store', host });
+      setLoading(false);
+      return undefined;
+    }
+
     if (params.get('checkout') === 'success') {
-      setCheckoutMessage('Payment received — your Pro plan is now active. If it still shows Free, refresh in a few seconds.');
+      setCheckoutMessage('Payment received - your Pro plan is now active. If it still shows Free, refresh in a few seconds.');
       window.history.replaceState({}, '', window.location.pathname);
     } else if (params.get('checkout') === 'cancel') {
-      setCheckoutMessage('Checkout canceled — you are still on the Free plan.');
+      setCheckoutMessage('Checkout canceled - you are still on the Free plan.');
       window.history.replaceState({}, '', window.location.pathname);
     }
-  }, []);
 
-  useEffect(() => {
+    let mounted = true;
+    const loadingFallback = window.setTimeout(() => {
+      if (mounted) setLoading(false);
+    }, 2500);
+
     async function getUser() {
-      const { data } = await supabase.auth.getUser();
-      setUser(data.user ?? null);
-      setLoading(false);
+      try {
+        const { data } = await supabase.auth.getUser();
+        if (mounted) setUser(data.user ?? null);
+      } catch (error) {
+        console.error('Auth check failed:', error);
+      } finally {
+        window.clearTimeout(loadingFallback);
+        if (mounted) setLoading(false);
+      }
     }
 
     getUser();
@@ -36,28 +57,32 @@ export default function Home() {
       setLoading(false);
     });
 
-    return () => subscription.unsubscribe();
+    return () => { mounted = false; window.clearTimeout(loadingFallback); subscription.unsubscribe(); };
   }, []);
 
   async function handleLogOut() {
     await supabase.auth.signOut();
   }
 
-  if (loading) {
-    return <div style={{ padding: '20px' }}>Loading...</div>;
+  if (loading && !shopifyContext) {
+    return <main><MeasureTool /></main>;
+  }
+
+  if (shopifyContext) {
+    return (
+      <main>
+        <ui-title-bar title="Measure Pro">
+          <button variant="primary" onClick={() => window.location.reload()}>New photo</button>
+        </ui-title-bar>
+        <MeasureTool shopifyMode shop={shopifyContext.shop} />
+      </main>
+    );
   }
 
   if (!user) {
     return (
-      <main style={{ padding: '40px', maxWidth: '700px', margin: '0 auto' }}>
-        <h1>Measure</h1>
-        <p>You need to log in before using exports.</p>
-        <a href="/login" style={{ display: 'inline-block', marginTop: '20px' }}>
-          Go to Login
-        </a>
-        <div style={{ marginTop: '30px' }}>
-          <MeasureTool />
-        </div>
+      <main>
+        <MeasureTool />
       </main>
     );
   }
@@ -67,7 +92,7 @@ export default function Home() {
       {checkoutMessage && (
         <div style={{ padding: '10px 20px', background: '#123018', color: '#a5d6a7', fontFamily: 'monospace', fontSize: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <span>{checkoutMessage}</span>
-          <button onClick={() => setCheckoutMessage(null)} style={{ background: 'transparent', border: 'none', color: '#a5d6a7', cursor: 'pointer' }}>×</button>
+          <button onClick={() => setCheckoutMessage(null)} style={{ background: 'transparent', border: 'none', color: '#a5d6a7', cursor: 'pointer' }}>x</button>
         </div>
       )}
       <div style={{ padding: '12px 20px', display: 'flex', justifyContent: 'space-between' }}>

@@ -2,20 +2,24 @@ import './globals.css'
 import { Analytics } from '@vercel/analytics/next'
 
 export const metadata = {
-  title: 'MEASURE — Garment Annotation Tool',
+  title: 'MEASURE - Garment Annotation Tool',
   description: 'Professional garment measurement annotation for clothing resellers. Click two points, enter your value, export a spec sheet.',
   keywords: 'garment measurements, clothing reseller, measurement sheet, eBay seller tool, vintage clothing',
   openGraph: {
-    title: 'MEASURE — Garment Annotation Tool',
+    title: 'MEASURE - Garment Annotation Tool',
     description: 'Professional garment measurement annotation for clothing resellers.',
     type: 'website',
   },
 }
 
 export default function RootLayout({ children }) {
+  const shopifyApiKey = process.env.NEXT_PUBLIC_SHOPIFY_API_KEY || '';
+
   return (
     <html lang="en">
       <head>
+        {shopifyApiKey && <meta name="shopify-api-key" content={shopifyApiKey} />}
+        {shopifyApiKey && <script src="https://cdn.shopify.com/shopifycloud/app-bridge.js"></script>}
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&display=swap" rel="stylesheet" />

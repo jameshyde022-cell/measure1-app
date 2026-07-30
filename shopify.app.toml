@@ -1,0 +1,18 @@
+name = "Measure"
+client_id = "REPLACE_WITH_SHOPIFY_CLIENT_ID"
+application_url = "https://REPLACE_WITH_YOUR_APP_DOMAIN"
+embedded = true
+
+[access_scopes]
+scopes = "read_products"
+
+[auth]
+redirect_urls = [
+  "https://REPLACE_WITH_YOUR_APP_DOMAIN/api/shopify/callback"
+]
+
+[webhooks]
+api_version = "2026-07"
+
+[pos]
+embedded = false
