@@ -3,7 +3,7 @@
     "version":  "0.1.0",
     "private":  true,
     "scripts":  {
-                    "dev":  "next dev",
+                    "dev":  "powershell -NoProfile -Command \"Remove-Item -LiteralPath .next -Recurse -Force -ErrorAction SilentlyContinue\" \u0026\u0026 next dev",
                     "build":  "next build",
                     "start":  "next start",
                     "lint":  "next lint",

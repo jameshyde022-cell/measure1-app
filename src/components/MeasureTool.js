@@ -500,6 +500,8 @@ export default function MeasureTool({ user, shopifyMode = false, shop = '' }) {
 
   const [exportBg,setExportBg]     = useState('black');
 
+  const [exportLayout,setExportLayout] = useState('spec');
+
   const [footerMode,setFooterMode] = useState('app');
 
   const [customFooter,setCustomFooter] = useState('');
@@ -759,6 +761,8 @@ const draftKey = shopifyMode && shop
 
         setExportBg(draft.exportBg || 'black');
 
+        setExportLayout(draft.exportLayout || 'spec');
+
         setFooterMode(draft.footerMode || 'app');
 
         setCustomFooter(draft.customFooter || '');
@@ -783,7 +787,7 @@ const draftKey = shopifyMode && shop
 
       window.localStorage.setItem(draftKey, JSON.stringify({
 
-        imageDataUrl,originalDataUrl,naturalSize,lines,pending,colorIdx,curName,useCustom,customName,curValue,curUnit,brand,itemName,notes,exportBg,footerMode,customFooter,
+        imageDataUrl,originalDataUrl,naturalSize,lines,pending,colorIdx,curName,useCustom,customName,curValue,curUnit,brand,itemName,notes,exportBg,exportLayout,footerMode,customFooter,
 
       }));
 
@@ -797,7 +801,7 @@ const draftKey = shopifyMode && shop
 
     }
 
-   },[draftKey,phase,imageDataUrl,originalDataUrl,naturalSize,lines,pending,colorIdx,curName,useCustom,customName,curValue,curUnit,brand,itemName,notes,exportBg,footerMode,customFooter]);
+   },[draftKey,phase,imageDataUrl,originalDataUrl,naturalSize,lines,pending,colorIdx,curName,useCustom,customName,curValue,curUnit,brand,itemName,notes,exportBg,exportLayout,footerMode,customFooter]);
 
 
 
@@ -1931,6 +1935,98 @@ const showPrepBrushPreview = (event) => {
 
 
 
+  const buildGalleryExportCanvas = () => {
+
+    const src=canvasRef.current; if(!src||!imgRef.current) return null;
+
+    const W=src.width;
+
+    const H=src.height;
+
+    const ec=document.createElement('canvas');
+
+    ec.width=W; ec.height=H;
+
+    const ctx=ec.getContext('2d');
+
+    ctx.fillStyle=exportTheme.panel;
+
+    ctx.fillRect(0,0,W,H);
+
+    renderExportImage(ec,imgRef.current,lines);
+
+    return ec;
+
+  };
+  const buildGalleryListExportCanvas = () => {
+
+    const ec=buildGalleryExportCanvas(); if(!ec) return null;
+
+    const ctx=ec.getContext('2d');
+
+    const W=ec.width;
+
+    const H=ec.height;
+
+    if (lines.length>0) {
+
+      const PAD=18;
+
+      const rowH=20;
+
+      const listW=Math.min(Math.max(190, Math.floor(W*0.34)), W-PAD*2);
+
+      const listH=28 + lines.length*rowH + 12;
+
+      const x=W-listW-PAD;
+
+      const y=H-listH-PAD;
+
+      ctx.fillStyle=exportBg==='black'?'rgba(8,8,8,0.82)':'rgba(255,255,255,0.88)';
+
+      ctx.fillRect(x,y,listW,listH);
+
+      ctx.strokeStyle=exportTheme.divider;
+
+      ctx.lineWidth=1;
+
+      ctx.strokeRect(x,y,listW,listH);
+
+      ctx.font='bold 11px monospace';
+
+      ctx.fillStyle=exportTheme.text;
+
+      ctx.textAlign='left';
+
+      ctx.textBaseline='middle';
+
+      ctx.fillText('MEASUREMENTS',x+12,y+16);
+
+      lines.forEach((line,i)=>{
+
+        const ly=y+34+i*rowH;
+
+        ctx.beginPath(); ctx.arc(x+16,ly,5,0,Math.PI*2);
+
+        ctx.fillStyle=line.color; ctx.fill();
+
+        ctx.font='bold 10px monospace'; ctx.fillStyle=exportTheme.muted; ctx.textAlign='left';
+
+        ctx.fillText(`${i+1}.`,x+28,ly);
+
+        ctx.font='11px monospace'; ctx.fillStyle=exportTheme.text;
+
+        const value=line.value?`: ${line.value}${line.unit}`:'';
+
+        ctx.fillText(`${line.name}${value}`,x+48,ly);
+
+      });
+
+    }
+
+    return ec;
+
+  };
   const buildExportCanvas = () => {
 
     const src=canvasRef.current; if(!src||!imgRef.current) return null;
@@ -2073,7 +2169,7 @@ const showPrepBrushPreview = (event) => {
 
   const handleExport = () => {
 
-    const ec = buildExportCanvas();
+    const ec = exportLayout === 'gallery' ? buildGalleryExportCanvas() : exportLayout === 'gallery-list' ? buildGalleryListExportCanvas() : buildExportCanvas();
 
     if (!ec) return;
 
@@ -2107,7 +2203,7 @@ const showPrepBrushPreview = (event) => {
 
     el.getContext('2d').drawImage(ec,0,0);
 
-  },[showExport,exportBg,footerMode,customFooter,brand,itemName,notes,lines]);
+  },[showExport,exportBg,exportLayout,footerMode,customFooter,brand,itemName,notes,lines]);
 
 
 
@@ -2413,7 +2509,7 @@ const showPrepBrushPreview = (event) => {
 
           <div style={{marginLeft:'auto',display:'flex',gap:8}}>
 
-            <button onClick={handleExport} style={{padding:'6px 16px',background:'#e8b84b',border:'none',fontFamily:'monospace',fontSize:9,letterSpacing:'0.15em',textTransform:'uppercase',cursor:'pointer',borderRadius:2,color:'#0d0d0d'}}>Generate Sheet</button>
+            <button onClick={handleExport} style={{padding:'6px 16px',background:'#e8b84b',border:'none',fontFamily:'monospace',fontSize:9,letterSpacing:'0.15em',textTransform:'uppercase',cursor:'pointer',borderRadius:2,color:'#0d0d0d'}}>{exportLayout === 'spec' ? 'Generate Sheet' : exportLayout === 'gallery-list' ? 'Generate Gallery + List' : 'Generate Gallery Image'}</button>
 
             <button onClick={async()=>{clearDraft(); if (imageDataUrl) await loadWorkingImage(imageDataUrl,'prepare');}} style={S.ghost}>Back to Prep</button>
 
@@ -2506,6 +2602,10 @@ const showPrepBrushPreview = (event) => {
               </div>
 
               <button onClick={()=>handleGeminiImage({endpoint:'/api/ghost-mannequin',view:'front',label:'Gemini ghost mannequin selected'})} disabled={aiGenerating} style={{padding:'8px 12px',background:'#e8b84b',border:'none',fontFamily:'monospace',fontSize:9,letterSpacing:'0.14em',textTransform:'uppercase',cursor:aiGenerating?'default':'pointer',borderRadius:2,color:'#0d0d0d',opacity:aiGenerating?0.6:1}}>Create Ghost Mannequin</button>
+
+              <button onClick={()=>handleGeminiImage({endpoint:'/api/clean-flat-lay',view:'',label:'Clean flat lay selected'})} disabled={aiGenerating} style={{...S.ghost,color:'#e8b84b',borderColor:'#e8b84b44',opacity:aiGenerating?0.6:1}}>Clean Flat Lay</button>
+
+              <button onClick={()=>handleGeminiImage({endpoint:'/api/retail-mannequin',view:'',label:'Retail mannequin selected'})} disabled={aiGenerating} style={{...S.ghost,color:'#f0ebe0',borderColor:'#f0ebe044',opacity:aiGenerating?0.6:1}}>Retail Mannequin</button>
 
               <button onClick={()=>handleGeminiImage({endpoint:'/api/model-dressup',view:'',label:'Gemini model dress-up selected'})} disabled={aiGenerating} style={{...S.ghost,color:'#4FC3F7',borderColor:'#4FC3F744',opacity:aiGenerating?0.6:1}}>Model Dress-Up</button>
 
@@ -2979,6 +3079,22 @@ const showPrepBrushPreview = (event) => {
 
                   <div>
 
+                    <label style={S.lbl}>Export Layout</label>
+
+                    <div style={{display:'flex',gap:6}}>
+
+                      <button onClick={()=>setExportLayout('spec')} style={{...S.ghost,flex:1,color:exportLayout==='spec'?'#e8b84b':'#555',borderColor:exportLayout==='spec'?'#e8b84b44':'#1e1e1e'}}>Spec Sheet</button>
+
+                      <button onClick={()=>setExportLayout('gallery')} style={{...S.ghost,flex:1,color:exportLayout==='gallery'?'#e8b84b':'#555',borderColor:exportLayout==='gallery'?'#e8b84b44':'#1e1e1e'}}>Gallery Image</button>
+
+                      <button onClick={()=>setExportLayout('gallery-list')} style={{...S.ghost,flex:1,color:exportLayout==='gallery-list'?'#e8b84b':'#555',borderColor:exportLayout==='gallery-list'?'#e8b84b44':'#1e1e1e'}}>Gallery + List</button>
+
+                    </div>
+
+                  </div>
+
+                  <div>
+
                     <label style={S.lbl}>Export Background</label>
 
                     <div style={{display:'flex',gap:6}}>
@@ -3015,7 +3131,7 @@ const showPrepBrushPreview = (event) => {
 
                   )}
 
-                  <button onClick={handleExport} style={{padding:'11px',background:'#e8b84b',border:'none',fontFamily:"'Playfair Display',serif",fontSize:14,fontWeight:700,letterSpacing:'0.06em',cursor:'pointer',borderRadius:2,color:'#0d0d0d'}}>Generate Sheet</button>
+                  <button onClick={handleExport} style={{padding:'11px',background:'#e8b84b',border:'none',fontFamily:"'Playfair Display',serif",fontSize:14,fontWeight:700,letterSpacing:'0.06em',cursor:'pointer',borderRadius:2,color:'#0d0d0d'}}>{exportLayout === 'spec' ? 'Generate Sheet' : exportLayout === 'gallery-list' ? 'Generate Gallery + List' : 'Generate Gallery Image'}</button>
 
                 </div>
 
@@ -3037,9 +3153,9 @@ const showPrepBrushPreview = (event) => {
 
           <div ref={exportSectionRef} style={{display:showExport?'flex':'none',borderTop:'2px solid #e8b84b44',padding:'28px 32px',background:'#060606',flexDirection:'column',alignItems:'center',gap:16}}>
 
-            <div style={{fontFamily:"'Playfair Display',serif",fontSize:18,color:'#e8b84b'}}>Measurement Sheet</div>
+            <div style={{fontFamily:"'Playfair Display',serif",fontSize:18,color:'#e8b84b'}}>{exportLayout === 'spec' ? 'Measurement Sheet' : exportLayout === 'gallery-list' ? 'Gallery + List' : 'Gallery Image'}</div>
 
-            <p style={{fontFamily:'monospace',fontSize:12,color:'#c8c0b3',letterSpacing:'0.08em',textAlign:'center',lineHeight:1.7}}>Export the finished sheet directly as a PNG.</p>
+            <p style={{fontFamily:'monospace',fontSize:12,color:'#c8c0b3',letterSpacing:'0.08em',textAlign:'center',lineHeight:1.7}}>{exportLayout === 'spec' ? 'Export the finished sheet directly as a PNG.' : exportLayout === 'gallery-list' ? 'Export the annotated product image with a compact measurement list.' : 'Export the annotated product image directly as a PNG.'}</p>
 
 
 
