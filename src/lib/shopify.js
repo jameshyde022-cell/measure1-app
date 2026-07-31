@@ -63,6 +63,7 @@ export async function exchangeCodeForToken({ shop, code }) {
       client_id: apiKey,
       client_secret: apiSecret,
       code,
+      expiring: 1,
     }),
   });
 
@@ -72,6 +73,29 @@ export async function exchangeCodeForToken({ shop, code }) {
   }
 
   return response.json();
+}
+
+async function refreshShopToken({ shop, refreshToken }) {
+  const { apiKey, apiSecret } = getShopifyConfig();
+  const response = await fetch(`https://${shop}/admin/oauth/access_token`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      client_id: apiKey,
+      client_secret: apiSecret,
+      grant_type: 'refresh_token',
+      refresh_token: refreshToken,
+    }),
+  });
+
+  if (!response.ok) {
+    const text = await response.text();
+    throw new Error(`Shopify token refresh failed: ${response.status} ${text}`);
+  }
+
+  const tokenData = await response.json();
+  await persistShopToken({ shop, tokenData });
+  return tokenData.access_token;
 }
 
 export function verifyShopifyWebhookHmac(rawBody, hmacHeader, secret) {
@@ -84,18 +108,27 @@ export function verifyShopifyWebhookHmac(rawBody, hmacHeader, secret) {
   }
 }
 
-export async function persistShopToken({ shop, accessToken }) {
+export async function persistShopToken({ shop, tokenData }) {
+  const expiresAt = tokenData.expires_in
+    ? new Date(Date.now() + tokenData.expires_in * 1000).toISOString()
+    : null;
+
   const { error } = await supabaseAdmin
     .from('shopify_shops')
-    .upsert({ shop, access_token: accessToken }, { onConflict: 'shop' });
+    .upsert({
+      shop,
+      access_token: tokenData.access_token,
+      refresh_token: tokenData.refresh_token || null,
+      token_expires_at: expiresAt,
+    }, { onConflict: 'shop' });
 
   if (error) throw error;
 }
 
-async function shopifyAdminGraphQL({ shop, query, variables }) {
+async function getValidAccessToken(shop) {
   const { data: row, error } = await supabaseAdmin
     .from('shopify_shops')
-    .select('access_token')
+    .select('access_token, refresh_token, token_expires_at')
     .eq('shop', shop)
     .single();
 
@@ -103,11 +136,26 @@ async function shopifyAdminGraphQL({ shop, query, variables }) {
     throw new Error('No stored Shopify access token for this shop');
   }
 
+  // Refresh if expired or expiring within the next 2 minutes.
+  const expiresAt = row.token_expires_at ? new Date(row.token_expires_at).getTime() : null;
+  if (expiresAt && expiresAt - Date.now() < 2 * 60 * 1000) {
+    if (!row.refresh_token) {
+      throw new Error('Shopify access token expired and no refresh token is stored');
+    }
+    return refreshShopToken({ shop, refreshToken: row.refresh_token });
+  }
+
+  return row.access_token;
+}
+
+async function shopifyAdminGraphQL({ shop, query, variables }) {
+  const accessToken = await getValidAccessToken(shop);
+
   const response = await fetch(`https://${shop}/admin/api/2026-10/graphql.json`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'X-Shopify-Access-Token': row.access_token,
+      'X-Shopify-Access-Token': accessToken,
     },
     body: JSON.stringify({ query, variables }),
   });

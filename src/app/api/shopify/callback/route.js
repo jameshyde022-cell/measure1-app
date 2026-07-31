@@ -41,7 +41,7 @@ export async function GET(request) {
   });
   response.cookies.delete('shopify_oauth_state');
 
-  await persistShopToken({ shop, accessToken: tokenData.access_token });
+  await persistShopToken({ shop, tokenData });
   console.log(`Shopify app installed for ${shop}. Scopes: ${tokenData.scope || 'none'}`);
   return response;
 }
