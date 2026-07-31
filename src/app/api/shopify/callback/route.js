@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { exchangeCodeForToken, getShopifyConfig, normalizeShop, verifyShopifyHmac } from '../../../../lib/shopify';
+import { exchangeCodeForToken, getShopifyConfig, normalizeShop, persistShopToken, verifyShopifyHmac } from '../../../../lib/shopify';
 
 export async function GET(request) {
   const url = new URL(request.url);
@@ -41,7 +41,7 @@ export async function GET(request) {
   });
   response.cookies.delete('shopify_oauth_state');
 
-  // Persist tokenData.access_token by shop before using Admin API calls in production.
+  await persistShopToken({ shop, accessToken: tokenData.access_token });
   console.log(`Shopify app installed for ${shop}. Scopes: ${tokenData.scope || 'none'}`);
   return response;
 }

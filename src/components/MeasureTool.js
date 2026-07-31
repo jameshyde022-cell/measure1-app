@@ -520,6 +520,10 @@ export default function MeasureTool({ user, shopifyMode = false, shop = '' }) {
 
   const [shopifyPickError,setShopifyPickError] = useState(null);
 
+  const [shopifyBilling,setShopifyBilling] = useState(null);
+
+  const [shopifySubscribing,setShopifySubscribing] = useState(false);
+
   const [shopifyPickStatus,setShopifyPickStatus] = useState('');
 
   const [customConfigs,setCustomConfigs] = useState([]);
@@ -662,6 +666,66 @@ const draftKey = shopifyMode && shop
     if (user && !shopifyMode) loadExportStatus();
 
   }, [user, shopifyMode]);
+
+  const loadShopifyBillingStatus = useCallback(async () => {
+
+    if (!shopifyMode || !shop) return;
+
+    try {
+
+      const res = await fetch(`/api/shopify/billing?shop=${encodeURIComponent(shop)}`);
+
+      const data = await res.json();
+
+      if (res.ok) setShopifyBilling(data);
+
+    } catch (error) {
+
+      console.error('Failed to load Shopify billing status:', error);
+
+    }
+
+  }, [shopifyMode, shop]);
+
+  useEffect(() => {
+
+    loadShopifyBillingStatus();
+
+  }, [loadShopifyBillingStatus]);
+
+  const handleShopifySubscribe = useCallback(async () => {
+
+    if (!shop || shopifySubscribing) return;
+
+    setShopifySubscribing(true);
+
+    try {
+
+      const res = await fetch('/api/shopify/billing', {
+
+        method: 'POST',
+
+        headers: { 'Content-Type': 'application/json' },
+
+        body: JSON.stringify({ shop }),
+
+      });
+
+      const data = await res.json();
+
+      if (!res.ok || !data.confirmationUrl) throw new Error(data.error || 'Could not start subscription.');
+
+      window.top.location.href = data.confirmationUrl;
+
+    } catch (error) {
+
+      setBgError(error.message || 'Could not start subscription.');
+
+      setShopifySubscribing(false);
+
+    }
+
+  }, [shop, shopifySubscribing]);
 
 
 
@@ -1128,6 +1192,8 @@ const draftKey = shopifyMode && shop
 
       if (view) formData.append('view', view);
 
+      if (shopifyMode && shop) formData.append('shop', shop);
+
 
 
       const res = await fetch(endpoint, { method: 'POST', body: formData });
@@ -1135,6 +1201,14 @@ const draftKey = shopifyMode && shop
       if (!res.ok) {
 
         const err = await res.json().catch(()=>({}));
+
+        if (res.status === 402) {
+
+          if (err.billingStatus) setShopifyBilling(err.billingStatus);
+
+          else loadShopifyBillingStatus();
+
+        }
 
         throw new Error(err.error || 'Gemini image generation failed.');
 
@@ -1164,7 +1238,7 @@ const draftKey = shopifyMode && shop
 
     }
 
-  },[originalDataUrl,aiGenerating,gender,loadWorkingImage,resetAnnotationState]);
+  },[originalDataUrl,aiGenerating,gender,loadWorkingImage,resetAnnotationState,shopifyMode,shop,loadShopifyBillingStatus]);
 
 
 
@@ -2585,6 +2659,30 @@ const showPrepBrushPreview = (event) => {
 
 
             <div style={{display:'grid',gap:8}}>
+
+              {shopifyMode && shopifyBilling && shopifyBilling.plan === 'none' && (
+                <div style={{padding:'10px 12px',background:'#1a1408',border:'1px solid #e8b84b44',borderRadius:2,display:'flex',flexDirection:'column',gap:8,alignItems:'center'}}>
+                  <div style={{fontSize:10,color:'#e8b84b',letterSpacing:'0.08em',textAlign:'center'}}>SUBSCRIBE TO GENERATE IMAGES — $12.95/MONTH, 7-DAY FREE TRIAL</div>
+                  <button onClick={handleShopifySubscribe} disabled={shopifySubscribing} style={{padding:'8px 12px',background:'#e8b84b',border:'none',fontFamily:'monospace',fontSize:9,letterSpacing:'0.14em',textTransform:'uppercase',cursor:shopifySubscribing?'default':'pointer',borderRadius:2,color:'#0d0d0d',opacity:shopifySubscribing?0.65:1}}>
+                    {shopifySubscribing ? 'Redirecting...' : 'Start Free Trial'}
+                  </button>
+                </div>
+              )}
+
+              {shopifyMode && shopifyBilling && shopifyBilling.plan === 'cancelled' && (
+                <div style={{padding:'10px 12px',background:'#1a1408',border:'1px solid #e8b84b44',borderRadius:2,display:'flex',flexDirection:'column',gap:8,alignItems:'center'}}>
+                  <div style={{fontSize:10,color:'#e8b84b',letterSpacing:'0.08em',textAlign:'center'}}>SUBSCRIPTION CANCELLED — RESUBSCRIBE TO GENERATE IMAGES</div>
+                  <button onClick={handleShopifySubscribe} disabled={shopifySubscribing} style={{padding:'8px 12px',background:'#e8b84b',border:'none',fontFamily:'monospace',fontSize:9,letterSpacing:'0.14em',textTransform:'uppercase',cursor:shopifySubscribing?'default':'pointer',borderRadius:2,color:'#0d0d0d',opacity:shopifySubscribing?0.65:1}}>
+                    {shopifySubscribing ? 'Redirecting...' : 'Resubscribe'}
+                  </button>
+                </div>
+              )}
+
+              {shopifyMode && shopifyBilling && ['trialing','active'].includes(shopifyBilling.plan) && (
+                <div style={{fontSize:9,color:'#999',letterSpacing:'0.08em',textAlign:'center'}}>
+                  {shopifyBilling.plan === 'trialing' ? 'FREE TRIAL — ' : ''}{shopifyBilling.remaining} OF {shopifyBilling.limit} IMAGES LEFT THIS MONTH
+                </div>
+              )}
 
               {true && (
                 <button onClick={handlePickShopifyProductImage} disabled={shopifyPicking} style={{padding:'8px 12px',background:'#111',border:'1px solid #e8b84b44',fontFamily:'monospace',fontSize:9,letterSpacing:'0.14em',textTransform:'uppercase',cursor:shopifyPicking?'default':'pointer',borderRadius:2,color:'#e8b84b',opacity:shopifyPicking?0.65:1}}>

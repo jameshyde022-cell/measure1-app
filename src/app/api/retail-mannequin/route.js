@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { consumeShopifyGeneration, normalizeShop } from '../../../lib/shopify';
 
 export const maxDuration = 60;
 
@@ -68,9 +69,22 @@ export async function POST(request) {
     const formData = await request.formData();
     const imageFile = formData.get('image_file');
     const gender = formData.get('gender') === 'male' ? 'male' : 'female';
+    const shop = normalizeShop(formData.get('shop'));
 
     if (!imageFile) {
       return NextResponse.json({ error: 'No image provided' }, { status: 400 });
+    }
+
+    if (shop) {
+      const status = await consumeShopifyGeneration(shop);
+      if (!status.allowed) {
+        return NextResponse.json({
+          error: status.plan === 'none'
+            ? 'Subscribe to Measure Pro to generate images.'
+            : `Monthly limit reached (${status.limit}/month). Upgrade or wait for next billing period.`,
+          billingStatus: status,
+        }, { status: 402 });
+      }
     }
 
     const apiKey = process.env.GEMINI_API_KEY;

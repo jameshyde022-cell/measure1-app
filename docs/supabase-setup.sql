@@ -176,3 +176,93 @@ revoke execute on function public.consume_bg_removal() from public, anon;
 grant execute on function public.consume_export() to authenticated, service_role;
 grant execute on function public.get_export_status() to authenticated, service_role;
 grant execute on function public.consume_bg_removal() to authenticated, service_role;
+
+-- ============================================================
+-- SHOPIFY BILLING: per-shop subscription + monthly generation limit.
+-- Shopify requests aren't Supabase-authenticated users, so this table
+-- is only ever touched server-side via the service role key.
+-- Free plan for Shopify: none (must subscribe). Paid plan: 150
+-- generations/month ($12.95/mo, matches Gemini cost breakeven).
+-- ============================================================
+
+create table if not exists public.shopify_shops (
+  shop text primary key,
+  access_token text,
+  plan text not null default 'none', -- none | trialing | active | cancelled
+  shopify_charge_id text,
+  trial_ends_at timestamptz,
+  generation_count integer not null default 0,
+  generation_period_start date,
+  created_at timestamptz not null default now()
+);
+
+alter table public.shopify_shops enable row level security;
+-- No policies: RLS with zero policies blocks all client access while
+-- service_role (used by the server) bypasses it entirely.
+
+create or replace function public.shopify_consume_generation(p_shop text, p_limit integer default 150)
+returns json
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  s public.shopify_shops%rowtype;
+  used integer;
+  period date;
+begin
+  select * into s from public.shopify_shops where shop = p_shop for update;
+
+  if not found or s.plan not in ('trialing', 'active') then
+    return json_build_object('allowed', false, 'plan', coalesce(s.plan, 'none'), 'remaining', 0, 'limit', p_limit);
+  end if;
+
+  period := date_trunc('month', current_date)::date;
+  used := case when s.generation_period_start is distinct from period then 0 else s.generation_count end;
+
+  if used >= p_limit then
+    return json_build_object('allowed', false, 'plan', s.plan, 'remaining', 0, 'limit', p_limit);
+  end if;
+
+  update public.shopify_shops
+  set generation_count = used + 1,
+      generation_period_start = period
+  where shop = p_shop;
+
+  return json_build_object('allowed', true, 'plan', s.plan, 'remaining', p_limit - used - 1, 'limit', p_limit);
+end;
+$$;
+
+create or replace function public.shopify_get_billing_status(p_shop text, p_limit integer default 150)
+returns json
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  s public.shopify_shops%rowtype;
+  used integer;
+  period date;
+begin
+  select * into s from public.shopify_shops where shop = p_shop;
+
+  if not found then
+    return json_build_object('plan', 'none', 'remaining', 0, 'limit', p_limit, 'trial_ends_at', null);
+  end if;
+
+  period := date_trunc('month', current_date)::date;
+  used := case when s.generation_period_start is distinct from period then 0 else s.generation_count end;
+
+  return json_build_object(
+    'plan', s.plan,
+    'remaining', greatest(p_limit - used, 0),
+    'limit', p_limit,
+    'trial_ends_at', s.trial_ends_at
+  );
+end;
+$$;
+
+revoke execute on function public.shopify_consume_generation(text, integer) from public, anon, authenticated;
+revoke execute on function public.shopify_get_billing_status(text, integer) from public, anon, authenticated;
+grant execute on function public.shopify_consume_generation(text, integer) to service_role;
+grant execute on function public.shopify_get_billing_status(text, integer) to service_role;

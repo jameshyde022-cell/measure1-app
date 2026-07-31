@@ -8,6 +8,10 @@ name = "Measure Pro"
 [webhooks]
 api_version = "2026-10"
 
+  [[webhooks.subscriptions]]
+  topics = ["app_subscriptions/update"]
+  uri = "/api/shopify/webhooks/subscriptions"
+
 [access_scopes]
 # Learn more at https://shopify.dev/docs/apps/tools/cli/configuration#access_scopes
 scopes = "read_products"
