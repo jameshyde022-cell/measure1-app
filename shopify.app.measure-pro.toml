@@ -1,7 +1,7 @@
 # Learn more about configuring your app at https://shopify.dev/docs/apps/tools/cli/configuration
 
 client_id = "3ca9666c5bf16887feac238cac9d94b7"
-application_url = "https://shopify.dev/apps/default-app-home"
+application_url = "https://measureapp.pro"
 embedded = true
 name = "Measure Pro"
 
@@ -13,7 +13,7 @@ api_version = "2026-10"
 scopes = "read_products"
 
 [auth]
-redirect_urls = [ "https://shopify.dev/apps/default-app-home/api/auth" ]
+redirect_urls = [ "https://measureapp.pro/api/shopify/callback" ]
 
 [build]
 include_config_on_deploy = true
