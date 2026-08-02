@@ -2615,11 +2615,23 @@ const showPrepBrushPreview = (event) => {
 
   return (
 
-    <div style={{background:'#0d0d0d',minHeight:shopifyMode?'calc(100vh - 48px)':'100vh',color:'#f0ebe0',display:'flex',flexDirection:'column',fontFamily:'monospace'}}>
+    <div className="mt-page" style={{background:'#0d0d0d',minHeight:shopifyMode?'calc(100vh - 48px)':'100vh',color:'#f0ebe0',display:'flex',flexDirection:'column',fontFamily:'monospace'}}>
 
-      <div style={{borderBottom:'1px solid #1a1a1a',padding:shopifyMode?'8px 20px':'12px 24px',display:'flex',alignItems:'center',gap:14}}>
+      <style jsx>{`
+        @media (max-width: 767px) {
+          .mt-page { overflow-x: hidden; }
+          .mt-header-bar { flex-wrap: wrap; }
+          .mt-header-actions { width: 100%; flex-wrap: wrap; margin-left: 0 !important; }
+          .mt-prepare-grid { grid-template-columns: 1fr !important; }
+          .mt-annotate-grid { grid-template-columns: 1fr !important; }
+          .mt-panel-col, .mt-annotate-panel-col { order: 2; min-width: 0; }
+          .mt-canvas-col, .mt-annotate-canvas-col { order: 1; min-width: 0; }
+        }
+      `}</style>
 
-        <div style={{fontFamily:"'Playfair Display',serif",fontSize:20,fontWeight:700}}>
+      <div className="mt-header-bar" style={{borderBottom:'1px solid #1a1a1a',padding:shopifyMode?'8px 20px':'12px 24px',display:'flex',alignItems:'center',gap:14}}>
+
+        <div style={{fontFamily:"'Playfair Display',serif",fontSize:26,fontWeight:700}}>
 
           MEAS<span style={{color:'#e8b84b'}}>UR</span>E
 
@@ -2627,19 +2639,19 @@ const showPrepBrushPreview = (event) => {
 
         <div style={{width:1,height:14,background:'#2a2a2a'}}/>
 
-        <div style={{fontSize:9,color:'#9f988c',letterSpacing:'0.18em',textTransform:'uppercase'}}>Garment Annotation Tool</div>
+        <div style={{fontSize:13,color:'#9f988c',letterSpacing:'0.18em',textTransform:'uppercase'}}>Garment Annotation Tool</div>
 
-        <div style={{marginLeft:'auto',display:'flex',gap:8}}>
+        <div className="mt-header-actions" style={{marginLeft:'auto',display:'flex',gap:8}}>
 
           {phase==='annotate'&&(
 
             <>
 
-              <button onClick={handleExport} style={{padding:'6px 16px',background:'#e8b84b',border:'none',fontFamily:'monospace',fontSize:9,letterSpacing:'0.15em',textTransform:'uppercase',cursor:'pointer',borderRadius:2,color:'#0d0d0d'}}>{exportLayout === 'spec' ? 'Generate Sheet' : exportLayout === 'gallery-list' ? 'Generate Gallery + List' : 'Generate Gallery Image'}</button>
+              <button onClick={handleExport} style={{padding:'6px 16px',background:'#e8b84b',border:'none',fontFamily:'monospace',fontSize:12,letterSpacing:'0.15em',textTransform:'uppercase',cursor:'pointer',borderRadius:2,color:'#0d0d0d'}}>{exportLayout === 'spec' ? 'Generate Sheet' : exportLayout === 'gallery-list' ? 'Generate Gallery + List' : 'Generate Gallery Image'}</button>
 
-              <button onClick={async()=>{clearDraft(); if (imageDataUrl) await loadWorkingImage(imageDataUrl,'prepare');}} style={S.ghost}>Back to Prep</button>
+              <button onClick={async()=>{clearDraft(); if (imageDataUrl) await loadWorkingImage(imageDataUrl,'prepare');}} style={{...S.ghost,fontSize:12}}>Back to Prep</button>
 
-              <button onClick={()=>fileRef.current.click()} style={S.ghost}>New Photo</button>
+              <button onClick={()=>fileRef.current.click()} style={{...S.ghost,fontSize:12}}>New Photo</button>
 
             </>
 
@@ -2647,7 +2659,7 @@ const showPrepBrushPreview = (event) => {
 
           {phase!=='upload'&&(
 
-            <button onClick={handleReset} style={S.ghost}>Reset</button>
+            <button onClick={handleReset} style={{...S.ghost,fontSize:12}}>Reset</button>
 
           )}
 
@@ -2704,9 +2716,9 @@ const showPrepBrushPreview = (event) => {
 
       {phase==='prepare'&&(
 
-        <div style={{flex:1,display:'grid',gridTemplateColumns:'280px 1fr',minHeight:0}}>
+        <div className="mt-prepare-grid" style={{flex:1,display:'grid',gridTemplateColumns:'280px 1fr',minHeight:0}}>
 
-          <div style={{borderRight:'1px solid #1a1a1a',padding:'16px',display:'flex',flexDirection:'column',gap:12,overflowY:'auto'}}>
+          <div className="mt-panel-col" style={{borderRight:'1px solid #1a1a1a',padding:'16px',display:'flex',flexDirection:'column',gap:12,overflowY:'auto'}}>
 
             <div style={{background:'#080808',border:'1px solid #1e1e1e',borderRadius:2,padding:'13px'}}>
 
@@ -2857,7 +2869,7 @@ const showPrepBrushPreview = (event) => {
 
 
 
-         <div style={{overflow:'auto',display:'flex',alignItems:'center',justifyContent:'center',padding:'20px',background:'#060606',position:'relative'}}>
+         <div className="mt-canvas-col" style={{overflow:'auto',display:'flex',alignItems:'center',justifyContent:'center',padding:'20px',background:'#060606',position:'relative'}}>
 
   {aiGenerating&&(
 
@@ -3053,9 +3065,9 @@ const showPrepBrushPreview = (event) => {
 
         <div style={{flex:1,display:'flex',flexDirection:'column'}}>
 
-          <div style={{display:'grid',gridTemplateColumns:'286px 1fr',flex:1,minHeight:0,overflow:'hidden'}}>
+          <div className="mt-annotate-grid" style={{display:'grid',gridTemplateColumns:'286px 1fr',flex:1,minHeight:0,overflow:'hidden'}}>
 
-            <div style={{borderRight:'1px solid #1a1a1a',padding:'16px',display:'flex',flexDirection:'column',gap:14,overflowY:'auto'}}>
+            <div className="mt-annotate-panel-col" style={{borderRight:'1px solid #1a1a1a',padding:'16px',display:'flex',flexDirection:'column',gap:14,overflowY:'auto'}}>
 
               <div style={{background:'#080808',border:'1px solid #1e1e1e',borderRadius:2,padding:'13px',display:'grid',gap:8}}>
 
@@ -3299,7 +3311,7 @@ const showPrepBrushPreview = (event) => {
 
 
 
-            <div style={{overflow:'auto',display:'flex',alignItems:'flex-start',justifyContent:'center',padding:'20px',background:'#060606',position:'relative'}}>
+            <div className="mt-annotate-canvas-col" style={{overflow:'auto',display:'flex',alignItems:'flex-start',justifyContent:'center',padding:'20px',background:'#060606',position:'relative'}}>
 
               <canvas ref={canvasRef} onClick={handleCanvasClick} onMouseDown={handleMouseDown} onMouseUp={handleMouseUp} onMouseLeave={handleCanvasLeave} onMouseMove={handleMove} style={{cursor:activeHandle ? 'grabbing' : 'crosshair',borderRadius:2,maxWidth:'100%',boxShadow:'0 4px 40px rgba(0,0,0,0.7)'}}/>
 
