@@ -85,6 +85,8 @@ export async function POST(request) {
           billingStatus: status,
         }, { status: 402 });
       }
+    } else {
+      return NextResponse.json({ error: 'Missing or invalid shop.' }, { status: 401 });
     }
 
     const apiKey = process.env.GEMINI_API_KEY;
@@ -99,7 +101,6 @@ export async function POST(request) {
     const models = [
       'gemini-3.1-flash-image',
       'gemini-2.5-flash-image',
-      'gemini-2.0-flash-preview-image-generation',
     ];
 
     let lastError = null;
@@ -125,6 +126,7 @@ export async function POST(request) {
               }],
               generationConfig: {
                 responseModalities: ['TEXT', 'IMAGE'],
+                imageConfig: { imageSize: '1K' },
               },
             }),
           }

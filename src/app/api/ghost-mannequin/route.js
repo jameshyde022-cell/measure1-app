@@ -338,6 +338,8 @@ export async function POST(req) {
           billingStatus: status,
         }, { status: 402 });
       }
+    } else {
+      return NextResponse.json({ error: 'Missing or invalid shop.' }, { status: 401 });
     }
 
     console.log('[ghost-mannequin] request received', {
@@ -362,7 +364,6 @@ export async function POST(req) {
     const models = [
       'gemini-3.1-flash-image',
       'gemini-2.5-flash-image',
-      'gemini-2.0-flash-preview-image-generation',
     ];
 
     let lastError = null;
@@ -390,6 +391,7 @@ export async function POST(req) {
               }],
               generationConfig: {
                 responseModalities: ['TEXT', 'IMAGE'],
+                imageConfig: { imageSize: '1K' },
               }
             })
           }

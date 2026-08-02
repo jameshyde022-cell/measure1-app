@@ -122,6 +122,8 @@ export async function POST(req) {
           billingStatus: status,
         }, { status: 402 });
       }
+    } else {
+      return NextResponse.json({ error: 'Missing or invalid shop.' }, { status: 401 });
     }
 
     const arrayBuffer = await imageFile.arrayBuffer();
@@ -135,6 +137,9 @@ export async function POST(req) {
 
     const prompt = gender === 'male' ? MALE_MODEL_PROMPT : FEMALE_MODEL_PROMPT;
 
+    // Uses gemini-3.1-flash-image-preview on v1beta intentionally; differs from the
+    // other routes' gemini-3.1-flash-image on v1. Falls back to 2.5-flash-image if
+    // the preview alias is retired. Revisit if this route starts failing while others work.
     const models = [
       'gemini-3.1-flash-image-preview',
       'gemini-2.5-flash-image',
@@ -165,6 +170,7 @@ export async function POST(req) {
               }],
               generationConfig: {
                 responseModalities: ['TEXT', 'IMAGE'],
+                imageConfig: { imageSize: '1K' },
               }
             })
           }
