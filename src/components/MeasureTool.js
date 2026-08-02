@@ -921,6 +921,56 @@ const draftKey = shopifyMode && shop
 
   },[]);
 
+  const handleReset = useCallback(() => {
+
+    clearDraft();
+
+    resetAnnotationState();
+
+    setImageDataUrl(null);
+
+    setOriginalDataUrl(null);
+
+    setNatural({w:1,h:1});
+
+    setCropMode(false);
+
+    setCropRect(null);
+
+    setPrepEraseMode(false);
+
+    setIsPrepErasing(false);
+
+    setPrepUndoImage(null);
+
+    setAiGenerating(false);
+
+    setAiStatus('');
+
+    setBgRemoving(false);
+
+    setBgError(null);
+
+    setShopifyPicking(false);
+
+    setShopifyPickError(null);
+
+    setShopifyPickStatus('');
+
+    setSourceLabel('Original image selected');
+
+    setBrand('');
+
+    setItemName('');
+
+    setNotes('');
+
+    setGender('female');
+
+    setPhase('upload');
+
+  },[clearDraft,resetAnnotationState]);
+
 
 
   const readFileAsDataUrl = file => new Promise((resolve, reject) => {
@@ -2579,19 +2629,29 @@ const showPrepBrushPreview = (event) => {
 
         <div style={{fontSize:9,color:'#9f988c',letterSpacing:'0.18em',textTransform:'uppercase'}}>Garment Annotation Tool</div>
 
-        {phase==='annotate'&&(
+        <div style={{marginLeft:'auto',display:'flex',gap:8}}>
 
-          <div style={{marginLeft:'auto',display:'flex',gap:8}}>
+          {phase==='annotate'&&(
 
-            <button onClick={handleExport} style={{padding:'6px 16px',background:'#e8b84b',border:'none',fontFamily:'monospace',fontSize:9,letterSpacing:'0.15em',textTransform:'uppercase',cursor:'pointer',borderRadius:2,color:'#0d0d0d'}}>{exportLayout === 'spec' ? 'Generate Sheet' : exportLayout === 'gallery-list' ? 'Generate Gallery + List' : 'Generate Gallery Image'}</button>
+            <>
 
-            <button onClick={async()=>{clearDraft(); if (imageDataUrl) await loadWorkingImage(imageDataUrl,'prepare');}} style={S.ghost}>Back to Prep</button>
+              <button onClick={handleExport} style={{padding:'6px 16px',background:'#e8b84b',border:'none',fontFamily:'monospace',fontSize:9,letterSpacing:'0.15em',textTransform:'uppercase',cursor:'pointer',borderRadius:2,color:'#0d0d0d'}}>{exportLayout === 'spec' ? 'Generate Sheet' : exportLayout === 'gallery-list' ? 'Generate Gallery + List' : 'Generate Gallery Image'}</button>
 
-            <button onClick={()=>fileRef.current.click()} style={S.ghost}>New Photo</button>
+              <button onClick={async()=>{clearDraft(); if (imageDataUrl) await loadWorkingImage(imageDataUrl,'prepare');}} style={S.ghost}>Back to Prep</button>
 
-          </div>
+              <button onClick={()=>fileRef.current.click()} style={S.ghost}>New Photo</button>
 
-        )}
+            </>
+
+          )}
+
+          {phase!=='upload'&&(
+
+            <button onClick={handleReset} style={S.ghost}>Reset</button>
+
+          )}
+
+        </div>
 
       </div>
 
