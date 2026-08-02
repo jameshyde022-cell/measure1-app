@@ -3,6 +3,7 @@ import { supabaseAdmin } from './supabaseAdmin';
 
 const SHOP_RE = /^[a-zA-Z0-9][a-zA-Z0-9-]*\.myshopify\.com$/;
 const MONTHLY_GENERATION_LIMIT = 150;
+const TRIAL_GENERATION_LIMIT = 15;
 const SUBSCRIPTION_PRICE_USD = 12.95;
 const TRIAL_DAYS = 7;
 
@@ -244,6 +245,7 @@ export async function consumeShopifyGeneration(shop) {
   const { data, error } = await supabaseAdmin.rpc('shopify_consume_generation', {
     p_shop: shop,
     p_limit: MONTHLY_GENERATION_LIMIT,
+    p_trial_limit: TRIAL_GENERATION_LIMIT,
   });
   if (error) throw error;
   return data;
@@ -253,6 +255,7 @@ export async function getShopifyBillingStatus(shop) {
   const { data, error } = await supabaseAdmin.rpc('shopify_get_billing_status', {
     p_shop: shop,
     p_limit: MONTHLY_GENERATION_LIMIT,
+    p_trial_limit: TRIAL_GENERATION_LIMIT,
   });
   if (error) throw error;
   return data;

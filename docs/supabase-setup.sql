@@ -200,7 +200,9 @@ alter table public.shopify_shops enable row level security;
 -- No policies: RLS with zero policies blocks all client access while
 -- service_role (used by the server) bypasses it entirely.
 
-create or replace function public.shopify_consume_generation(p_shop text, p_limit integer default 150)
+drop function if exists public.shopify_consume_generation(text, integer);
+
+create or replace function public.shopify_consume_generation(p_shop text, p_limit integer default 150, p_trial_limit integer default 15)
 returns json
 language plpgsql
 security definer
@@ -210,6 +212,7 @@ declare
   s public.shopify_shops%rowtype;
   used integer;
   period date;
+  effective_limit integer;
 begin
   select * into s from public.shopify_shops where shop = p_shop for update;
 
@@ -217,11 +220,13 @@ begin
     return json_build_object('allowed', false, 'plan', coalesce(s.plan, 'none'), 'remaining', 0, 'limit', p_limit);
   end if;
 
+  effective_limit := case when s.plan = 'trialing' then p_trial_limit else p_limit end;
+
   period := date_trunc('month', current_date)::date;
   used := case when s.generation_period_start is distinct from period then 0 else s.generation_count end;
 
-  if used >= p_limit then
-    return json_build_object('allowed', false, 'plan', s.plan, 'remaining', 0, 'limit', p_limit);
+  if used >= effective_limit then
+    return json_build_object('allowed', false, 'plan', s.plan, 'remaining', 0, 'limit', effective_limit);
   end if;
 
   update public.shopify_shops
@@ -229,11 +234,13 @@ begin
       generation_period_start = period
   where shop = p_shop;
 
-  return json_build_object('allowed', true, 'plan', s.plan, 'remaining', p_limit - used - 1, 'limit', p_limit);
+  return json_build_object('allowed', true, 'plan', s.plan, 'remaining', effective_limit - used - 1, 'limit', effective_limit);
 end;
 $$;
 
-create or replace function public.shopify_get_billing_status(p_shop text, p_limit integer default 150)
+drop function if exists public.shopify_get_billing_status(text, integer);
+
+create or replace function public.shopify_get_billing_status(p_shop text, p_limit integer default 150, p_trial_limit integer default 15)
 returns json
 language plpgsql
 security definer
@@ -243,6 +250,7 @@ declare
   s public.shopify_shops%rowtype;
   used integer;
   period date;
+  effective_limit integer;
 begin
   select * into s from public.shopify_shops where shop = p_shop;
 
@@ -250,19 +258,21 @@ begin
     return json_build_object('plan', 'none', 'remaining', 0, 'limit', p_limit, 'trial_ends_at', null);
   end if;
 
+  effective_limit := case when s.plan = 'trialing' then p_trial_limit else p_limit end;
+
   period := date_trunc('month', current_date)::date;
   used := case when s.generation_period_start is distinct from period then 0 else s.generation_count end;
 
   return json_build_object(
     'plan', s.plan,
-    'remaining', greatest(p_limit - used, 0),
-    'limit', p_limit,
+    'remaining', greatest(effective_limit - used, 0),
+    'limit', effective_limit,
     'trial_ends_at', s.trial_ends_at
   );
 end;
 $$;
 
-revoke execute on function public.shopify_consume_generation(text, integer) from public, anon, authenticated;
-revoke execute on function public.shopify_get_billing_status(text, integer) from public, anon, authenticated;
-grant execute on function public.shopify_consume_generation(text, integer) to service_role;
-grant execute on function public.shopify_get_billing_status(text, integer) to service_role;
+revoke execute on function public.shopify_consume_generation(text, integer, integer) from public, anon, authenticated;
+revoke execute on function public.shopify_get_billing_status(text, integer, integer) from public, anon, authenticated;
+grant execute on function public.shopify_consume_generation(text, integer, integer) to service_role;
+grant execute on function public.shopify_get_billing_status(text, integer, integer) to service_role;
