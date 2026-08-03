@@ -1776,6 +1776,58 @@ const showPrepBrushPreview = (event) => {
 
 
 
+  const handleTouchStart = e => {
+
+    const c = canvasRef.current; if (!c) return;
+
+    const touch = e.touches[0]; if (!touch) return;
+
+    const pt = getCanvasPoint(c, touch);
+
+    const hit = findEndpointHit(lines, pt);
+
+    if (!hit) return;
+
+    dragHandleRef.current = hit;
+
+    didDragRef.current = false;
+
+    setActiveHandle(hit);
+
+    setHoverIdx(hit.lineIdx);
+
+  };
+
+
+
+  useEffect(() => {
+
+    const c = canvasRef.current;
+
+    if (!c) return;
+
+    const onTouchMove = e => {
+
+      if (!dragHandleRef.current) return;
+
+      e.preventDefault();
+
+      const touch = e.touches[0];
+
+      if (!touch) return;
+
+      handleMove(touch);
+
+    };
+
+    c.addEventListener('touchmove', onTouchMove, { passive: false });
+
+    return () => c.removeEventListener('touchmove', onTouchMove);
+
+  });
+
+
+
   const updLine=(i,f,v)=>setLines(prev=>prev.map((l,idx)=>idx===i?{...l,[f]:v}:l));
 
   const delLine=i=>setLines(prev=>prev.filter((_,idx)=>idx!==i));
@@ -3313,7 +3365,7 @@ const showPrepBrushPreview = (event) => {
 
             <div className="mt-annotate-canvas-col" style={{overflow:'auto',display:'flex',alignItems:'flex-start',justifyContent:'center',padding:'20px',background:'#060606',position:'relative'}}>
 
-              <canvas ref={canvasRef} onClick={handleCanvasClick} onMouseDown={handleMouseDown} onMouseUp={handleMouseUp} onMouseLeave={handleCanvasLeave} onMouseMove={handleMove} style={{cursor:activeHandle ? 'grabbing' : 'crosshair',borderRadius:2,maxWidth:'100%',boxShadow:'0 4px 40px rgba(0,0,0,0.7)'}}/>
+              <canvas ref={canvasRef} onClick={handleCanvasClick} onMouseDown={handleMouseDown} onMouseUp={handleMouseUp} onMouseLeave={handleCanvasLeave} onMouseMove={handleMove} onTouchStart={handleTouchStart} onTouchEnd={handleMouseUp} onTouchCancel={handleMouseUp} style={{cursor:activeHandle ? 'grabbing' : 'crosshair',borderRadius:2,maxWidth:'100%',boxShadow:'0 4px 40px rgba(0,0,0,0.7)',touchAction:'none'}}/>
 
             </div>
 
