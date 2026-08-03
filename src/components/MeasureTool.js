@@ -270,6 +270,22 @@ function findEndpointHit(lines, pt, radius=10) {
 
 }
 
+function resizeImageForUpload(dataUrl, maxDimension = 2000, quality = 0.85) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => {
+      const scale = Math.min(1, maxDimension / Math.max(img.width, img.height));
+      const canvas = document.createElement('canvas');
+      canvas.width = Math.round(img.width * scale);
+      canvas.height = Math.round(img.height * scale);
+      canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+      canvas.toBlob(blob => blob ? resolve(blob) : reject(new Error('Image compression failed')), 'image/jpeg', quality);
+    };
+    img.onerror = () => reject(new Error('Could not load image for compression'));
+    img.src = dataUrl;
+  });
+}
+
 
 
 function renderCanvas(canvas, img, lines, pendingPoint, previewPoint, hoverIdx, activeHandle) {
@@ -1236,7 +1252,7 @@ const draftKey = shopifyMode && shop
 
     try {
 
-      const sourceBlob = await fetch(originalDataUrl).then(r=>r.blob());
+      const sourceBlob = await resizeImageForUpload(originalDataUrl);
 
       const formData = new FormData();
 
