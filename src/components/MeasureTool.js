@@ -486,6 +486,8 @@ export default function MeasureTool({ user, shopifyMode = false, shop = '' }) {
 
   const [gender,setGender]         = useState('female');
 
+  const [garmentType,setGarmentType] = useState('top');
+
   const [aiGenerating,setAiGenerating] = useState(false);
 
   const [aiStatus,setAiStatus]     = useState('');
@@ -967,6 +969,8 @@ const draftKey = shopifyMode && shop
 
     setGender('female');
 
+    setGarmentType('top');
+
     setPhase('upload');
 
   },[clearDraft,resetAnnotationState]);
@@ -1240,6 +1244,8 @@ const draftKey = shopifyMode && shop
 
       formData.append('gender', gender);
 
+      formData.append('garmentType', garmentType);
+
       if (view) formData.append('view', view);
 
       if (shopifyMode && shop) formData.append('shop', shop);
@@ -1288,7 +1294,7 @@ const draftKey = shopifyMode && shop
 
     }
 
-  },[originalDataUrl,aiGenerating,gender,loadWorkingImage,resetAnnotationState,shopifyMode,shop,loadShopifyBillingStatus]);
+  },[originalDataUrl,aiGenerating,gender,garmentType,loadWorkingImage,resetAnnotationState,shopifyMode,shop,loadShopifyBillingStatus]);
 
 
 
@@ -2820,6 +2826,20 @@ const showPrepBrushPreview = (event) => {
                 <button onClick={()=>setGender('female')} style={{...S.ghost,color:gender==='female'?'#e8b84b':'#555',borderColor:gender==='female'?'#e8b84b44':'#1e1e1e'}}>Women</button>
 
                 <button onClick={()=>setGender('male')} style={{...S.ghost,color:gender==='male'?'#4FC3F7':'#555',borderColor:gender==='male'?'#4FC3F744':'#1e1e1e'}}>Men</button>
+
+              </div>
+
+              <div style={{display:'grid',gridTemplateColumns:'repeat(5,1fr)',gap:6}}>
+
+                <button onClick={()=>setGarmentType('top')} style={{...S.ghost,color:garmentType==='top'?'#e8b84b':'#555',borderColor:garmentType==='top'?'#e8b84b44':'#1e1e1e'}}>Top</button>
+
+                <button onClick={()=>setGarmentType('pants')} style={{...S.ghost,color:garmentType==='pants'?'#e8b84b':'#555',borderColor:garmentType==='pants'?'#e8b84b44':'#1e1e1e'}}>Pants</button>
+
+                <button onClick={()=>setGarmentType('skirt')} style={{...S.ghost,color:garmentType==='skirt'?'#e8b84b':'#555',borderColor:garmentType==='skirt'?'#e8b84b44':'#1e1e1e'}}>Skirt</button>
+
+                <button onClick={()=>setGarmentType('dress')} style={{...S.ghost,color:garmentType==='dress'?'#e8b84b':'#555',borderColor:garmentType==='dress'?'#e8b84b44':'#1e1e1e'}}>Dress</button>
+
+                <button onClick={()=>setGarmentType('jacket')} style={{...S.ghost,color:garmentType==='jacket'?'#e8b84b':'#555',borderColor:garmentType==='jacket'?'#e8b84b44':'#1e1e1e'}}>Jacket</button>
 
               </div>
 

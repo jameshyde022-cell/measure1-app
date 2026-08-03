@@ -3,318 +3,37 @@ import { consumeShopifyGeneration, normalizeShop } from '../../../lib/shopify';
 
 export const maxDuration = 60;
 
-const FEMALE_PROMPT = `Use the uploaded garment image as the exact garment blueprint.
+const TOP_FEMALE_FRONT_PROMPT = `Use the uploaded garment as the exact reference and render it as a front-facing photorealistic ghost-mannequin ecommerce image on a pure white background. Use a realistic feminine invisible body form appropriate for the garment. Show natural three-dimensional structure with supported shoulders, bust, chest, torso, waist shaping, sleeve volume where applicable, realistic drape, depth, and side-seam curvature. Preserve the exact top exactly as shown, including silhouette, fabric, texture, color, print, trim, seams, stitching, closures, proportions, and all design details. Produce a clean high-resolution ecommerce result with only the garment visible, centered, fully presented, and shown straight-on from the front.`;
 
-VIEW REQUIREMENT:
-Render the garment in a [FRONT VIEW].
-- FRONT VIEW: show the front side of the garment only
-- do not mix front and back views
-- do not angle or rotate the garment
-- straight-on orthographic view only
+const TOP_FEMALE_REAR_PROMPT = `Use the uploaded garment as the exact reference and render it as a back-facing photorealistic ghost-mannequin ecommerce image on a pure white background. Use a realistic feminine invisible body form appropriate for the garment. Show natural three-dimensional structure with supported shoulders, upper back, waist shaping, sleeve volume where applicable, realistic drape, depth, and side-seam curvature. Preserve the exact top exactly as shown, including silhouette, fabric, texture, color, print, trim, seams, stitching, closures, proportions, and all back design details. Produce a clean high-resolution ecommerce result with only the garment visible, centered, fully presented, and shown straight-on from the back.`;
 
-Generate a photorealistic ecommerce ghost-mannequin product image of this garment.
+const TOP_MALE_FRONT_PROMPT = `Use the uploaded garment as the exact reference and render it as a front-facing photorealistic ghost-mannequin ecommerce image on a pure white background. Use a realistic masculine invisible body form appropriate for the garment. Show natural three-dimensional structure with supported shoulders, chest, torso, waist shaping, sleeve volume where applicable, realistic drape, depth, and side-seam curvature. Preserve the exact top exactly as shown, including silhouette, fabric, texture, color, print, trim, seams, stitching, closures, proportions, and all design details. Produce a clean high-resolution ecommerce result with only the garment visible, centered, fully presented, and shown straight-on from the front.`;
 
-This must NOT look like a flat lay.
-This must NOT look like the garment is lying on a surface.
-This must NOT look front-pressed or two-dimensional.
+const TOP_MALE_REAR_PROMPT = `Use the uploaded garment as the exact reference and render it as a back-facing photorealistic ghost-mannequin ecommerce image on a pure white background. Use a realistic masculine invisible body form appropriate for the garment. Show natural three-dimensional structure with supported shoulders, upper back, torso shaping, sleeve volume where applicable, realistic drape, depth, and side-seam curvature. Preserve the exact top exactly as shown, including silhouette, fabric, texture, color, print, trim, seams, stitching, closures, proportions, and all back design details. Produce a clean high-resolution ecommerce result with only the garment visible, centered, fully presented, and shown straight-on from the back.`;
 
-The garment must appear as if it is being worn on an invisible mannequin with a swimsuit-model body shape, so the clothing shows real three-dimensional body form.
+const PANTS_FEMALE_FRONT_PROMPT = `Use the uploaded garment as the exact reference and render it as a front-facing photorealistic ghost-mannequin ecommerce image on a pure white background. Use a realistic feminine invisible body form appropriate for the garment. Show natural three-dimensional structure with supported waist, hips, seat transition, front rise, thigh shaping, leg volume, realistic drape, depth, and side-seam curvature. Preserve the exact pants exactly as shown, including silhouette, fabric, texture, color, print, waistband, pockets, fly, seams, stitching, trim, proportions, and all design details. Produce a clean high-resolution ecommerce result with only the garment visible, centered, fully presented, and shown straight-on from the front.`;
 
-Invisible mannequin body shape requirements:
-- feminine swimsuit-model proportions
-- natural bust contour where applicable
-- tapered waist where applicable
-- realistic torso volume
-- natural shoulder slope
-- accurate chest, side seam, and body shaping
-- body presence visible only through garment fit
-- absolutely no visible mannequin or support structure
+const PANTS_FEMALE_REAR_PROMPT = `Use the uploaded garment as the exact reference and render it as a back-facing photorealistic ghost-mannequin ecommerce image on a pure white background. Use a realistic feminine invisible body form appropriate for the garment. Show natural three-dimensional structure with supported waist, hips, seat, upper leg shaping, leg volume, realistic drape, depth, and side-seam curvature. Preserve the exact pants exactly as shown, including silhouette, fabric, texture, color, print, waistband, back pockets where applicable, seams, stitching, trim, proportions, and all back design details. Produce a clean high-resolution ecommerce result with only the garment visible, centered, fully presented, and shown straight-on from the back.`;
 
-Critical anti-flat-lay requirements:
-- garment must wrap around a 3D torso
-- side seams must curve naturally around the body
-- openings must show interior depth (neckline, armholes, leg openings)
-- no flattened symmetry
-- no overhead/tabletop look
-- no paper-doll effect
-- no floating empty shell
+const PANTS_MALE_FRONT_PROMPT = `Use the uploaded garment as the exact reference and render it as a front-facing photorealistic ghost-mannequin ecommerce image on a pure white background. Use a realistic masculine invisible body form appropriate for the garment. Show natural three-dimensional structure with supported waist, hips, front rise, thigh shaping, leg volume, realistic drape, depth, and side-seam curvature. Preserve the exact pants exactly as shown, including silhouette, fabric, texture, color, print, waistband, pockets, fly, seams, stitching, trim, proportions, and all design details. Produce a clean high-resolution ecommerce result with only the garment visible, centered, fully presented, and shown straight-on from the front.`;
 
-Garment accuracy requirements:
-- treat the uploaded image as the exact product reference, not inspiration
-- preserve the exact garment cut, fit, width, rise, length, flare, taper, and hem opening
-- preserve fabric texture, color, print, pattern placement, seams, stitching, pockets, waistband, buttons, zipper/fly, trims, and hardware
-- do not invent new flowers, graphics, textures, decorative details, labels, hardware, seams, pockets, or closures
-- do not beautify, redesign, simplify, replace, or restyle the garment
-- do not smooth away real wrinkles, fabric texture, fading, distressing, or construction details from the original
-- if the source photo is unclear, stay conservative and keep the output closer to the uploaded garment rather than inventing a polished new design
+const PANTS_MALE_REAR_PROMPT = `Use the uploaded garment as the exact reference and render it as a back-facing photorealistic ghost-mannequin ecommerce image on a pure white background. Use a realistic masculine invisible body form appropriate for the garment. Show natural three-dimensional structure with supported waist, seat, upper leg shaping, leg volume, realistic drape, depth, and side-seam curvature. Preserve the exact pants exactly as shown, including silhouette, fabric, texture, color, print, waistband, back pockets where applicable, seams, stitching, trim, proportions, and all back design details. Produce a clean high-resolution ecommerce result with only the garment visible, centered, fully presented, and shown straight-on from the back.`;
 
-Fit and drape requirements:
-- natural gravity-based drape
-- preserve the original fit and garment ease
-- do not make the garment tighter, slimmer, sexier, more fitted, or more body-hugging
-- do not exaggerate hips, thighs, waist, bust, chest, seat, or body contours
-- realistic folds and volume without inflating or over-smoothing
-- if the garment is loose, wide, straight, boxy, relaxed, or flared, keep it loose, wide, straight, boxy, relaxed, or flared
+const SKIRT_FRONT_PROMPT = `Use the uploaded garment as the exact reference and render it as a front-facing photorealistic ghost-mannequin ecommerce image on a pure white background. Use an appropriate invisible body form for the garment. Show natural three-dimensional structure with supported waist, hips, lower-body shaping, realistic drape, depth, hem flow, and side-seam curvature. Preserve the exact skirt exactly as shown, including silhouette, fabric, texture, color, print, waistband, pleats, panels, trim, seams, stitching, proportions, and all design details. Produce a clean high-resolution ecommerce result with only the garment visible, centered, fully presented, and shown straight-on from the front.`;
 
-Background and styling:
-- clean white studio background
-- straight-on ecommerce product shot
-- centered and fully visible
-- high detail, soft even lighting
-- no visible model, mannequin, torso, legs, skin, stand, hanger, support structure, or props
-- show only the garment
+const SKIRT_REAR_PROMPT = `Use the uploaded garment as the exact reference and render it as a back-facing photorealistic ghost-mannequin ecommerce image on a pure white background. Use an appropriate invisible body form for the garment. Show natural three-dimensional structure with supported waist, hips, seat shaping where applicable, realistic drape, depth, hem flow, and side-seam curvature. Preserve the exact skirt exactly as shown, including silhouette, fabric, texture, color, print, waistband, pleats, panels, trim, seams, stitching, proportions, and all back design details. Produce a clean high-resolution ecommerce result with only the garment visible, centered, fully presented, and shown straight-on from the back.`;
 
+const DRESS_FRONT_PROMPT = `Use the uploaded garment as the exact reference and render it as a front-facing photorealistic ghost-mannequin ecommerce image on a pure white background. Use a realistic feminine invisible body form appropriate for the garment. Show natural three-dimensional structure with supported shoulders, bust, chest, waist, hips, skirt volume where applicable, sleeve volume where applicable, realistic drape, depth, hem flow, and side-seam curvature. Preserve the exact dress exactly as shown, including silhouette, fabric, texture, color, print, neckline, trim, seams, stitching, closures, proportions, and all design details. Produce a clean high-resolution ecommerce result with only the garment visible, centered, fully presented, and shown straight-on from the front.`;
 
-Pants and jeans special rules:
-- front fly, button, waistband, front pockets, rise, and leg openings must face the camera
-- crop just above the waistband if needed; do not show a torso
-- keep the original leg shape exactly; do not convert loose, wide, straight, bootcut, or flared pants into skinny pants or leggings
-- do not stretch pants around a visible or implied body
-- do not create visible hip, crotch, thigh, buttock, calf, or leg anatomy contours unless those contours are present in the original garment photo
-- preserve the original hem width and opening
-- keep bottom hem edges flat and fabric-like
-- do not create visible feet, shoes, soles, toes, foot-shaped shadows, shoe-like shapes, hollow foot cavities, or dark oval openings at the hems
-- if pant legs are hollow, show only a subtle straight fabric shadow, not a rounded interior cavity
-Final requirement:
-The result must clearly read as a true front-facing OR rear-facing ghost mannequin image, never a mixed or angled view.`;
+const DRESS_REAR_PROMPT = `Use the uploaded garment as the exact reference and render it as a back-facing photorealistic ghost-mannequin ecommerce image on a pure white background. Use a realistic feminine invisible body form appropriate for the garment. Show natural three-dimensional structure with supported shoulders, upper back, waist, hips, skirt volume where applicable, sleeve volume where applicable, realistic drape, depth, hem flow, and side-seam curvature. Preserve the exact dress exactly as shown, including silhouette, fabric, texture, color, print, back neckline, trim, seams, stitching, closures, proportions, and all back design details. Produce a clean high-resolution ecommerce result with only the garment visible, centered, fully presented, and shown straight-on from the back.`;
 
-const MALE_PROMPT = `Use the uploaded garment image as the exact garment blueprint.
+const JACKET_FEMALE_FRONT_PROMPT = `Use the uploaded garment as the exact reference and render it as a front-facing photorealistic ghost-mannequin ecommerce image on a pure white background. Use a realistic feminine invisible body form appropriate for the garment. Show natural three-dimensional structure with supported shoulders, bust, chest, torso, waist shaping, sleeve volume, collar and lapel structure where applicable, realistic drape, depth, and side-seam curvature. Preserve the exact jacket exactly as shown, including silhouette, fabric, texture, color, print, lining visibility where applicable, collar, lapels, closures, pockets, seams, stitching, trim, proportions, and all design details. Produce a clean high-resolution ecommerce result with only the garment visible, centered, fully presented, and shown straight-on from the front.`;
 
-VIEW REQUIREMENT:
-Render the garment in FRONT VIEW only.
-- show the front side only
-- do not mix front and back views
-- do not angle or rotate the garment
-- straight-on orthographic view only
+const JACKET_FEMALE_REAR_PROMPT = `Use the uploaded garment as the exact reference and render it as a back-facing photorealistic ghost-mannequin ecommerce image on a pure white background. Use a realistic feminine invisible body form appropriate for the garment. Show natural three-dimensional structure with supported shoulders, upper back, waist shaping, sleeve volume, hem structure, realistic drape, depth, and side-seam curvature. Preserve the exact jacket exactly as shown, including silhouette, fabric, texture, color, print, collar shape, seams, stitching, trim, proportions, and all back design details. Produce a clean high-resolution ecommerce result with only the garment visible, centered, fully presented, and shown straight-on from the back.`;
 
-Generate a photorealistic ecommerce ghost-mannequin product image of this garment.
+const JACKET_MALE_FRONT_PROMPT = `Use the uploaded garment as the exact reference and render it as a front-facing photorealistic ghost-mannequin ecommerce image on a pure white background. Use a realistic masculine invisible body form appropriate for the garment. Show natural three-dimensional structure with supported shoulders, chest, torso, waist shaping, sleeve volume, collar and lapel structure where applicable, realistic drape, depth, and side-seam curvature. Preserve the exact jacket exactly as shown, including silhouette, fabric, texture, color, print, lining visibility where applicable, collar, lapels, closures, pockets, seams, stitching, trim, proportions, and all design details. Produce a clean high-resolution ecommerce result with only the garment visible, centered, fully presented, and shown straight-on from the front.`;
 
-This must NOT look like a flat lay.
-This must NOT look like the garment lying on a surface.
-This must NOT look front-pressed or two-dimensional.
-
-The garment must appear worn on an invisible MALE mannequin only.
-
-Invisible mannequin body shape requirements:
-- masculine torso proportions
-- broad male shoulders
-- straight male ribcage
-- straight-to-tapered male waist
-
-CHEST REQUIREMENT (CRITICAL):
-- FLAT MALE CHEST ONLY
-- visible male pectoral plane only
-- slight natural pectoral definition permitted
-- chest must be broad and flat, not projected
-- garment must drape over a flat male chest, not breasts
-
-ABSOLUTELY FORBIDDEN:
-- no breasts
-- no bust contour
-- no rounded breast volume
-- no convex bust projection
-- no left and right breast forms
-- no cleavage-like shaping
-- no feminine chest anatomy
-- do not create breast shapes under transparent or sheer fabric
-- render sheer fabric over a flat male pectoral chest only
-
-Critical anti-flat-lay requirements:
-- garment must wrap around a 3D male torso
-- side seams must curve naturally around a male body
-- openings must show interior depth
-- no flattened symmetry
-- no overhead/tabletop look
-- no paper-doll effect
-- no floating empty shell
-
-Garment accuracy requirements:
-- treat the uploaded image as the exact product reference, not inspiration
-- preserve the exact garment cut, fit, width, rise, length, flare, taper, and hem opening
-- preserve fabric texture, color, transparency, print, pattern placement, seams, closures, trims, pockets, waistband, buttons, zipper/fly, and construction details
-- do not invent new graphics, textures, decorative details, labels, hardware, seams, pockets, or closures
-- do not beautify, redesign, reinterpret, simplify, replace, or restyle the garment
-- do not smooth away real wrinkles, fabric texture, fading, distressing, or construction details from the original
-- if the source photo is unclear, stay conservative and keep the output closer to the uploaded garment rather than inventing a polished new design
-
-Fit and drape requirements:
-- natural gravity-based drape
-- preserve the original fit and garment ease
-- do not make the garment tighter, slimmer, more fitted, or more body-hugging
-- do not exaggerate shoulders, chest, waist, hips, thighs, seat, or body contours
-- preserve natural folds and fabric behavior without stiffening, inflating, or overfilling the garment
-- if the garment is loose, wide, straight, boxy, relaxed, or flared, keep it loose, wide, straight, boxy, relaxed, or flared
-
-Background and styling:
-- clean white studio background
-- straight-on ecommerce product shot
-- centered and fully visible
-- sharp detail
-- soft even professional lighting
-- no visible model, mannequin, torso, legs, skin, stand, hanger, support structure, or props
-- show only the garment
-
-
-Pants and jeans special rules:
-- front fly, button, waistband, front pockets, rise, and leg openings must face the camera
-- crop just above the waistband if needed; do not show a torso
-- keep the original leg shape exactly; do not convert loose, wide, straight, bootcut, or flared pants into skinny pants or leggings
-- do not stretch pants around a visible or implied body
-- do not create visible hip, crotch, thigh, buttock, calf, or leg anatomy contours unless those contours are present in the original garment photo
-- preserve the original hem width and opening
-- keep bottom hem edges flat and fabric-like
-- do not create visible feet, shoes, soles, toes, foot-shaped shadows, shoe-like shapes, hollow foot cavities, or dark oval openings at the hems
-- if pant legs are hollow, show only a subtle straight fabric shadow, not a rounded interior cavity
-Final requirement:
-The result must read instantly as premium ghost-mannequin photography on an invisible male torso with a flat male pectoral chest only, never a female bust form.`;
-
-const FEMALE_REAR_PROMPT = `Use the uploaded garment image as the exact garment blueprint.
-
-VIEW REQUIREMENT:
-Render the garment in a [Rear VIEW].
-- REAR VIEW: show the back side of the garment only
-- do not mix front and back views
-- do not angle or rotate the garment
-- straight-on orthographic view only
-
-Generate a photorealistic ecommerce ghost-mannequin product image of this garment.
-
-This must NOT look like a flat lay.
-This must NOT look like the garment is lying on a surface.
-This must NOT look front-pressed or two-dimensional.
-
-The garment must appear as if it is being worn on an invisible mannequin with a swimsuit-model body shape, so the clothing shows real three-dimensional body form.
-
-Invisible mannequin body shape requirements:
-- feminine swimsuit-model proportions
-- natural bust contour where applicable
-- tapered waist where applicable
-- realistic torso volume
-- natural shoulder slope
-- accurate chest, side seam, and body shaping
-- body presence visible only through garment fit
-- absolutely no visible mannequin or support structure
-
-Critical anti-flat-lay requirements:
-- garment must wrap around a 3D torso
-- side seams must curve naturally around the body
-- openings must show interior depth (neckline, armholes, leg openings)
-- no flattened symmetry
-- no overhead/tabletop look
-- no paper-doll effect
-- no floating empty shell
-
-Garment accuracy requirements:
-- treat the uploaded image as the exact product reference, not inspiration
-- preserve the exact garment cut, fit, width, rise, length, flare, taper, and hem opening
-- preserve fabric texture, color, print, pattern placement, seams, stitching, pockets, waistband, buttons, zipper/fly, trims, and hardware
-- do not invent new flowers, graphics, textures, decorative details, labels, hardware, seams, pockets, or closures
-- do not beautify, redesign, simplify, replace, or restyle the garment
-- do not smooth away real wrinkles, fabric texture, fading, distressing, or construction details from the original
-- if the source photo is unclear, stay conservative and keep the output closer to the uploaded garment rather than inventing a polished new design
-
-Fit and drape requirements:
-- natural gravity-based drape
-- preserve the original fit and garment ease
-- do not make the garment tighter, slimmer, sexier, more fitted, or more body-hugging
-- do not exaggerate hips, thighs, waist, bust, chest, seat, or body contours
-- realistic folds and volume without inflating or over-smoothing
-- if the garment is loose, wide, straight, boxy, relaxed, or flared, keep it loose, wide, straight, boxy, relaxed, or flared
-
-Background and styling:
-- clean white studio background
-- straight-on ecommerce product shot
-- centered and fully visible
-- high detail, soft even lighting
-- no visible model, mannequin, torso, legs, skin, stand, hanger, support structure, or props
-- show only the garment
-
-
-Pants and jeans special rules:
-- front fly, button, waistband, front pockets, rise, and leg openings must face the camera
-- crop just above the waistband if needed; do not show a torso
-- keep the original leg shape exactly; do not convert loose, wide, straight, bootcut, or flared pants into skinny pants or leggings
-- do not stretch pants around a visible or implied body
-- do not create visible hip, crotch, thigh, buttock, calf, or leg anatomy contours unless those contours are present in the original garment photo
-- preserve the original hem width and opening
-- keep bottom hem edges flat and fabric-like
-- do not create visible feet, shoes, soles, toes, foot-shaped shadows, shoe-like shapes, hollow foot cavities, or dark oval openings at the hems
-- if pant legs are hollow, show only a subtle straight fabric shadow, not a rounded interior cavity
-Final requirement:
-The result must clearly read as a true front-facing OR rear-facing ghost mannequin image, never a mixed or angled view.`;
-
-const MALE_REAR_PROMPT = `Use the uploaded garment image as the exact garment blueprint.
-The uploaded image is the BACK SIDE of the garment photographed facing the camera as a standard product image.
-
-Generate a photorealistic ecommerce ghost-mannequin image showing an invisible MALE mannequin viewed FROM BEHIND.
-
-CRITICAL ORIENTATION REQUIREMENT:
-- the camera must be looking at the mannequin's back
-- the mannequin must be facing away from the camera
-- show the back of the invisible male mannequin only
-- show the uploaded garment being worn on the mannequin's back
-- do not generate a front-facing mannequin
-- do not rotate to a front view
-- do not mix front and back information
-- straight-on rear view only
-- no angled or 3/4 rear view
-
-Generate true ghost-mannequin photography, not a flat lay.
-The garment must appear worn on an invisible mannequin with realistic MALE body shape only.
-
-Invisible mannequin body shape requirements:
-- masculine back proportions
-- broad male shoulders
-- natural upper back contour
-- subtle male shoulder blade structure where applicable
-- straight male ribcage
-- straight-to-tapered male waist where applicable
-- realistic male back torso volume
-- side seams wrapping naturally around a male body
-- body presence visible only through garment fit
-- absolutely no visible mannequin structure
-
-Critical anti-flat-lay requirements:
-- garment must wrap around a 3D male back torso
-- rear neckline and armholes must show interior depth where applicable
-- no flattened symmetry
-- no tabletop or laid-flat appearance
-- no paper-doll effect
-- no floating empty shell
-
-Garment accuracy requirements:
-- preserve the uploaded back view exactly
-- preserve all back-specific details exactly
-- preserve seams, closures, cutouts, trims, hardware, fabric texture, and pattern placement
-- do not redesign or simplify anything
-
-Fit and drape requirements:
-- natural gravity-based drape
-- realistic tension from shoulders through upper back and torso
-- preserve natural folds and fabric behavior
-- do not stiffen, inflate, or overfill the garment
-
-Background and styling:
-- clean white studio background
-- centered ecommerce product shot
-- soft even professional lighting
-- no model
-- no hanger
-- no props
-
-
-Pants and jeans special rules:
-- front fly, button, waistband, front pockets, rise, and leg openings must face the camera
-- crop just above the waistband if needed; do not show a torso
-- keep the original leg shape exactly; do not convert loose, wide, straight, bootcut, or flared pants into skinny pants or leggings
-- do not stretch pants around a visible or implied body
-- do not create visible hip, crotch, thigh, buttock, calf, or leg anatomy contours unless those contours are present in the original garment photo
-- preserve the original hem width and opening
-- keep bottom hem edges flat and fabric-like
-- do not create visible feet, shoes, soles, toes, foot-shaped shadows, shoe-like shapes, hollow foot cavities, or dark oval openings at the hems
-- if pant legs are hollow, show only a subtle straight fabric shadow, not a rounded interior cavity
-Final requirement:
-The final image must read instantly as premium ghost-mannequin photography photographed from behind, showing an invisible male mannequin's back wearing the uploaded back-view garment.`;
+const JACKET_MALE_REAR_PROMPT = `Use the uploaded garment as the exact reference and render it as a back-facing photorealistic ghost-mannequin ecommerce image on a pure white background. Use a realistic masculine invisible body form appropriate for the garment. Show natural three-dimensional structure with supported shoulders, upper back, torso shaping, sleeve volume, hem structure, realistic drape, depth, and side-seam curvature. Preserve the exact jacket exactly as shown, including silhouette, fabric, texture, color, print, collar shape, seams, stitching, trim, proportions, and all back design details. Produce a clean high-resolution ecommerce result with only the garment visible, centered, fully presented, and shown straight-on from the back.`;
 
 export async function POST(req) {
   try {
@@ -322,6 +41,7 @@ export async function POST(req) {
     const imageFile = formData.get('image_file');
     const gender = formData.get('gender') || 'female';
     const view = formData.get('view') || 'front';
+    const garmentType = formData.get('garmentType') || 'top';
     const shop = normalizeShop(formData.get('shop'));
 
     if (!imageFile) {
@@ -343,7 +63,7 @@ export async function POST(req) {
     }
 
     console.log('[ghost-mannequin] request received', {
-      receivedBytes: imageFile.size, mimeType: imageFile.type, gender, view,
+      receivedBytes: imageFile.size, mimeType: imageFile.type, gender, view, garmentType,
     });
 
     const arrayBuffer = await imageFile.arrayBuffer();
@@ -355,11 +75,32 @@ export async function POST(req) {
       return NextResponse.json({ error: 'Gemini API key not configured' }, { status: 500 });
     }
 
+    const isRear = view === 'rear';
     let prompt;
-    if (gender === 'male' && view === 'rear') prompt = MALE_REAR_PROMPT;
-    else if (gender === 'female' && view === 'rear') prompt = FEMALE_REAR_PROMPT;
-    else if (gender === 'male') prompt = MALE_PROMPT;
-    else prompt = FEMALE_PROMPT;
+    switch (garmentType) {
+      case 'pants':
+        prompt = gender === 'male'
+          ? (isRear ? PANTS_MALE_REAR_PROMPT : PANTS_MALE_FRONT_PROMPT)
+          : (isRear ? PANTS_FEMALE_REAR_PROMPT : PANTS_FEMALE_FRONT_PROMPT);
+        break;
+      case 'skirt':
+        prompt = isRear ? SKIRT_REAR_PROMPT : SKIRT_FRONT_PROMPT;
+        break;
+      case 'dress':
+        prompt = isRear ? DRESS_REAR_PROMPT : DRESS_FRONT_PROMPT;
+        break;
+      case 'jacket':
+        prompt = gender === 'male'
+          ? (isRear ? JACKET_MALE_REAR_PROMPT : JACKET_MALE_FRONT_PROMPT)
+          : (isRear ? JACKET_FEMALE_REAR_PROMPT : JACKET_FEMALE_FRONT_PROMPT);
+        break;
+      case 'top':
+      default:
+        prompt = gender === 'male'
+          ? (isRear ? TOP_MALE_REAR_PROMPT : TOP_MALE_FRONT_PROMPT)
+          : (isRear ? TOP_FEMALE_REAR_PROMPT : TOP_FEMALE_FRONT_PROMPT);
+        break;
+    }
 
     const models = [
       'gemini-3.1-flash-image',
