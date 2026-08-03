@@ -23,23 +23,9 @@ export async function GET(request) {
   }
 
   const tokenData = await exchangeCodeForToken({ shop, code });
+  // Session identification now happens via verified App Bridge session tokens
+  // (see lib/shopify.js verifySessionToken), not cookies.
   const response = NextResponse.redirect(`${appUrl}/?shop=${encodeURIComponent(shop)}&host=${encodeURIComponent(host)}`);
-
-  response.cookies.set('shopify_shop', shop, {
-    httpOnly: true,
-    secure: true,
-    sameSite: 'none',
-    path: '/',
-    maxAge: 60 * 60 * 24 * 30,
-  });
-  response.cookies.set('shopify_installed', '1', {
-    httpOnly: true,
-    secure: true,
-    sameSite: 'none',
-    path: '/',
-    maxAge: 60 * 60 * 24 * 30,
-  });
-  response.cookies.delete('shopify_oauth_state');
 
   await persistShopToken({ shop, tokenData });
   console.log(`Shopify app installed for ${shop}. Scopes: ${tokenData.scope || 'none'}`);

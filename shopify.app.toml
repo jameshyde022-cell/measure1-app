@@ -1,18 +1,29 @@
-name = "Measure"
-client_id = "REPLACE_WITH_SHOPIFY_CLIENT_ID"
-application_url = "https://REPLACE_WITH_YOUR_APP_DOMAIN"
+# Learn more about configuring your app at https://shopify.dev/docs/apps/tools/cli/configuration
+
+client_id = "3ca9666c5bf16887feac238cac9d94b7"
+application_url = "https://measureapp.pro"
 embedded = true
+name = "Measure Pro"
+
+[webhooks]
+api_version = "2026-10"
+
+  [[webhooks.subscriptions]]
+  topics = ["app_subscriptions/update"]
+  uri = "/api/shopify/webhooks/subscriptions"
+
+  [[webhooks.subscriptions]]
+  compliance_topics = ["customers/data_request", "customers/redact", "shop/redact"]
+  uri = "/api/shopify/webhooks/compliance"
 
 [access_scopes]
 scopes = "read_products"
 
 [auth]
-redirect_urls = [
-  "https://REPLACE_WITH_YOUR_APP_DOMAIN/api/shopify/callback"
-]
+redirect_urls = [ "https://measureapp.pro/api/shopify/callback" ]
 
-[webhooks]
-api_version = "2026-07"
+[build]
+automatically_update_urls_on_dev = true
 
 [pos]
 embedded = false

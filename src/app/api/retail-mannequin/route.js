@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { consumeShopifyGeneration, normalizeShop } from '../../../lib/shopify';
+import { consumeShopifyGeneration, verifySessionToken } from '../../../lib/shopify';
 
 export const maxDuration = 60;
 
@@ -69,7 +69,7 @@ export async function POST(request) {
     const formData = await request.formData();
     const imageFile = formData.get('image_file');
     const gender = formData.get('gender') === 'male' ? 'male' : 'female';
-    const shop = normalizeShop(formData.get('shop'));
+    const shop = verifySessionToken(request.headers.get('authorization'));
 
     if (!imageFile) {
       return NextResponse.json({ error: 'No image provided' }, { status: 400 });

@@ -7,6 +7,7 @@ import { useState, useRef, useEffect, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
 
 import { consumeExport, getExportStatus } from "../lib/exportLimits";
+import { getShopifySessionToken } from '../lib/shopifyClient';
 
 
 
@@ -691,7 +692,13 @@ const draftKey = shopifyMode && shop
 
     try {
 
-      const res = await fetch(`/api/shopify/billing?shop=${encodeURIComponent(shop)}`);
+      const token = await getShopifySessionToken();
+
+      const res = await fetch(`/api/shopify/billing?shop=${encodeURIComponent(shop)}`, {
+
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+
+      });
 
       const data = await res.json();
 
@@ -719,11 +726,19 @@ const draftKey = shopifyMode && shop
 
     try {
 
+      const token = await getShopifySessionToken();
+
       const res = await fetch('/api/shopify/billing', {
 
         method: 'POST',
 
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+
+          'Content-Type': 'application/json',
+
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+
+        },
 
         body: JSON.stringify({ shop }),
 
@@ -1266,9 +1281,19 @@ const draftKey = shopifyMode && shop
 
       if (shopifyMode && shop) formData.append('shop', shop);
 
+      let headers = {};
+
+      if (shopifyMode) {
+
+        const token = await getShopifySessionToken();
+
+        if (token) headers = { Authorization: `Bearer ${token}` };
+
+      }
 
 
-      const res = await fetch(endpoint, { method: 'POST', body: formData });
+
+      const res = await fetch(endpoint, { method: 'POST', body: formData, headers });
 
       if (!res.ok) {
 

@@ -99,6 +99,66 @@ async function refreshShopToken({ shop, refreshToken }) {
   return tokenData.access_token;
 }
 
+export function verifySessionToken(authHeader) {
+  const { apiKey, apiSecret } = getShopifyConfig();
+  if (!apiSecret || !authHeader?.startsWith('Bearer ')) return null;
+
+  const token = authHeader.slice(7);
+  const parts = token.split('.');
+  if (parts.length !== 3) return null;
+  const [headerB64, payloadB64, signatureB64] = parts;
+
+  const expectedSig = crypto.createHmac('sha256', apiSecret).update(`${headerB64}.${payloadB64}`).digest('base64url');
+  try {
+    if (!crypto.timingSafeEqual(Buffer.from(expectedSig), Buffer.from(signatureB64))) return null;
+  } catch {
+    return null;
+  }
+
+  let payload;
+  try {
+    payload = JSON.parse(Buffer.from(payloadB64, 'base64url').toString('utf8'));
+  } catch {
+    return null;
+  }
+
+  const now = Date.now() / 1000;
+  if (typeof payload.exp !== 'number' || payload.exp < now) return null;
+  if (typeof payload.nbf === 'number' && payload.nbf > now) return null;
+  if (payload.aud !== apiKey) return null;
+
+  const shop = normalizeShop(payload.dest);
+  if (!shop) return null;
+
+  const issShop = normalizeShop(String(payload.iss || '').replace(/\/admin\/?$/, ''));
+  if (issShop !== shop) return null;
+
+  return shop;
+}
+
+export async function exchangeSessionTokenForAccessToken({ shop, sessionToken }) {
+  const { apiKey, apiSecret } = getShopifyConfig();
+  const response = await fetch(`https://${shop}/admin/oauth/access_token`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      client_id: apiKey,
+      client_secret: apiSecret,
+      grant_type: 'urn:ietf:params:oauth:grant-type:token-exchange',
+      subject_token: sessionToken,
+      subject_token_type: 'urn:ietf:params:oauth:token-type:id_token',
+      requested_token_type: 'urn:shopify:params:oauth:token-type:offline-access-token',
+    }),
+  });
+
+  if (!response.ok) {
+    const text = await response.text();
+    throw new Error(`Shopify token exchange failed: ${response.status} ${text}`);
+  }
+
+  return response.json();
+}
+
 export function verifyShopifyWebhookHmac(rawBody, hmacHeader, secret) {
   if (!secret || !hmacHeader) return false;
   const digest = crypto.createHmac('sha256', secret).update(rawBody, 'utf8').digest('base64');

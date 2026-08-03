@@ -2,27 +2,62 @@
 
 import { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
+import { getShopifySessionToken } from '../lib/shopifyClient';
 import MeasureTool from '../components/MeasureTool';
+
+function detectShopifyEmbed() {
+  if (typeof window === 'undefined') return false;
+  const params = new URLSearchParams(window.location.search);
+  const embedded = params.get('embedded') === '1' || params.get('embedded') === 'true';
+  return Boolean(params.get('shop') || params.get('host') || embedded || window.self !== window.top);
+}
 
 export default function Home() {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(false);
   const [checkoutMessage, setCheckoutMessage] = useState(null);
   const [shopifyContext, setShopifyContext] = useState(null);
+  const [shopifyAuthError, setShopifyAuthError] = useState(null);
+  const [isShopifyEmbed] = useState(detectShopifyEmbed);
 
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const shop = params.get('shop');
-    const host = params.get('host');
-    const embedded = params.get('embedded') === '1' || params.get('embedded') === 'true';
-    const framed = window.self !== window.top;
+    if (isShopifyEmbed) {
+      const params = new URLSearchParams(window.location.search);
+      const host = params.get('host');
+      let cancelled = false;
 
-    if (shop || host || embedded || framed) {
-      setShopifyContext({ shop: shop || 'shopify-store', host });
-      setLoading(false);
-      return undefined;
+      (async () => {
+        const token = await getShopifySessionToken();
+        if (cancelled) return;
+
+        if (!token) {
+          setShopifyAuthError('Could not verify your Shopify session. Please reload the app from your Shopify admin.');
+          return;
+        }
+
+        try {
+          const res = await fetch('/api/shopify/session', {
+            method: 'POST',
+            headers: { Authorization: `Bearer ${token}` },
+          });
+          const data = await res.json().catch(() => ({}));
+          if (cancelled) return;
+
+          if (!res.ok || !data.ok) {
+            setShopifyAuthError(data.error || 'Could not authenticate with Shopify.');
+            return;
+          }
+
+          setShopifyContext({ shop: data.shop, host });
+        } catch (error) {
+          if (!cancelled) setShopifyAuthError('Could not authenticate with Shopify.');
+        }
+      })();
+
+      return () => { cancelled = true; };
     }
 
+    const params = new URLSearchParams(window.location.search);
     if (params.get('checkout') === 'success') {
       setCheckoutMessage('Payment received - your Pro plan is now active. If it still shows Free, refresh in a few seconds.');
       window.history.replaceState({}, '', window.location.pathname);
@@ -64,11 +99,23 @@ export default function Home() {
     await supabase.auth.signOut();
   }
 
-  if (loading && !shopifyContext) {
-    return <main><MeasureTool /></main>;
-  }
+  if (isShopifyEmbed) {
+    if (shopifyAuthError) {
+      return (
+        <main style={{ padding: '24px 20px', fontFamily: 'monospace', color: '#f0ebe0' }}>
+          <p>{shopifyAuthError}</p>
+        </main>
+      );
+    }
 
-  if (shopifyContext) {
+    if (!shopifyContext) {
+      return (
+        <main style={{ padding: '24px 20px', fontFamily: 'monospace', color: '#f0ebe0' }}>
+          <p>Loading...</p>
+        </main>
+      );
+    }
+
     return (
       <main>
         <ui-title-bar title="Measure Pro">
@@ -77,6 +124,10 @@ export default function Home() {
         <MeasureTool shopifyMode shop={shopifyContext.shop} />
       </main>
     );
+  }
+
+  if (loading && !shopifyContext) {
+    return <main><MeasureTool /></main>;
   }
 
   if (!user) {

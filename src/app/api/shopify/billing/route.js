@@ -1,9 +1,8 @@
 import { NextResponse } from 'next/server';
-import { createAppSubscription, getShopifyBillingStatus, normalizeShop } from '../../../../lib/shopify';
+import { createAppSubscription, getShopifyBillingStatus, verifySessionToken } from '../../../../lib/shopify';
 
 export async function GET(request) {
-  const url = new URL(request.url);
-  const shop = normalizeShop(url.searchParams.get('shop'));
+  const shop = verifySessionToken(request.headers.get('authorization'));
 
   if (!shop) {
     return NextResponse.json({ error: 'Missing or invalid shop.' }, { status: 400 });
@@ -18,8 +17,7 @@ export async function GET(request) {
 }
 
 export async function POST(request) {
-  const { shop: rawShop } = await request.json().catch(() => ({}));
-  const shop = normalizeShop(rawShop);
+  const shop = verifySessionToken(request.headers.get('authorization'));
 
   if (!shop) {
     return NextResponse.json({ error: 'Missing or invalid shop.' }, { status: 400 });
